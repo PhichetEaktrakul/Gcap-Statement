@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import Topbar from "@/components/topbar";
+
 export default function PortfolioPage() {
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<any>(null);
@@ -39,26 +39,24 @@ export default function PortfolioPage() {
   };
   return (
     <>
-      {" "}
-      <Topbar />
-      <div className="p-6 space-y-6">
+      <div className="p-4 md:p-6 space-y-4 md:space-y-6">
         {/* TITLE */}
-        <div className="flex justify-between items-center">
-          <h1 className="text-xl font-semibold">Portfolio</h1>
-          <div className="bg-green-100 text-green-600 text-sm px-3 py-1 rounded-full">
+        <div className="flex justify-between items-center gap-3">
+          <h1 className="text-lg md:text-xl font-semibold">Portfolio</h1>
+          <div className="bg-green-100 text-green-600 text-xs md:text-sm px-3 py-1 rounded-full whitespace-nowrap">
             6 รายการ
           </div>
         </div>
 
         {/* FILTER CARD */}
         <Card className="rounded-xl">
-          <CardContent className="p-5 space-y-4">
-            <div className="flex flex-wrap gap-4 items-center">
+          <CardContent className="p-4 md:p-5 space-y-4">
+            <div className="flex flex-col lg:flex-row lg:flex-wrap gap-3 md:gap-4 lg:items-center">
               {/* Asset */}
               <div className="flex items-center gap-2">
-                <span className="text-sm">Asset:</span>
+                <span className="text-sm shrink-0">Asset:</span>
                 <Select>
-                  <SelectTrigger className="w-[120px]">
+                  <SelectTrigger className="w-full lg:w-[120px]">
                     <SelectValue placeholder="All" />
                   </SelectTrigger>
                   <SelectContent>
@@ -71,9 +69,9 @@ export default function PortfolioPage() {
 
               {/* Type */}
               <div className="flex items-center gap-2">
-                <span className="text-sm">คำสั่ง:</span>
+                <span className="text-sm shrink-0">คำสั่ง:</span>
                 <Select>
-                  <SelectTrigger className="w-[120px]">
+                  <SelectTrigger className="w-full lg:w-[120px]">
                     <SelectValue placeholder="All" />
                   </SelectTrigger>
                   <SelectContent>
@@ -85,19 +83,23 @@ export default function PortfolioPage() {
               </div>
 
               {/* Date */}
-              <div className="flex items-center gap-2">
-                <span className="text-sm">วันครบดีล:</span>
-                <Input type="date" className="w-[150px]" />
-                <span>ถึง</span>
-                <Input type="date" className="w-[150px]" />
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                <span className="text-sm shrink-0">วันครบดีล:</span>
+                <div className="flex items-center gap-2">
+                  <Input type="date" className="w-full sm:w-[150px]" />
+                  <span className="text-sm">ถึง</span>
+                  <Input type="date" className="w-full sm:w-[150px]" />
+                </div>
               </div>
 
               {/* Search */}
-              <Button className="bg-blue-600 hover:bg-blue-700">ค้นหา</Button>
+              <Button className="w-full lg:w-auto bg-blue-600 hover:bg-blue-700">
+                ค้นหา
+              </Button>
             </div>
 
             {/* Summary */}
-            <div className="text-sm text-gray-500 flex gap-6">
+            <div className="text-xs md:text-sm text-gray-500 flex flex-wrap gap-x-4 md:gap-x-6 gap-y-1">
               <span>QTY 96.50 : -</span>
               <span>QTY 99.99 : -</span>
               <span>Total : -</span>

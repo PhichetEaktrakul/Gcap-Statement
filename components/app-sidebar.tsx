@@ -2,21 +2,20 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
-import { PanelLeft } from "lucide-react";
 import {
+  PanelLeft,
+  X,
   LayoutDashboard,
   Briefcase,
   FileText,
   History,
-  ChevronLeft,
-  ChevronRight,
 } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
-  TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+
 const menu = [
   { name: "Dashboard", icon: LayoutDashboard, path: "/dashboard" },
   { name: "Portfolio", icon: Briefcase, path: "/portfolio" },
@@ -24,73 +23,111 @@ const menu = [
   { name: "History", icon: History, path: "/history" },
 ];
 
-export default function AppSidebar() {
+type Props = {
+  mobileOpen?: boolean;
+  onMobileOpenChange?: (open: boolean) => void;
+};
+
+export default function AppSidebar({
+  mobileOpen = false,
+  onMobileOpenChange,
+}: Props) {
   const pathname = usePathname();
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
 
+  const closeMobile = () => onMobileOpenChange?.(false);
+
   return (
-    <div
-      className={`
-        bg-[#0b1a3a] text-white h-screen flex flex-col transition-all duration-300
-        ${collapsed ? "w-20" : "w-64"}
-      `}>
-      {/* HEADER */}
-      <div
+    <>
+      {/* Mobile overlay */}
+      {mobileOpen && (
+        <div
+          onClick={closeMobile}
+          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside
         className={`
-          flex items-center 
-          ${collapsed ? "justify-center" : "justify-between"} 
-          p-4
+          bg-[#0b1a3a] text-white h-screen flex flex-col transition-all duration-300
+          fixed md:relative inset-y-0 left-0 z-50
+          w-64 ${collapsed ? "md:w-20" : "md:w-64"}
+          ${mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
         `}>
-        {!collapsed && (
-          <div className="font-bold">
+        {/* HEADER */}
+        <div
+          className={`
+            flex items-center justify-between p-4
+            ${collapsed ? "md:justify-center" : ""}
+          `}>
+          <div className={`font-bold ${collapsed ? "md:hidden" : ""}`}>
             GCAP <span className="text-sm text-gray-300">STATEMENT</span>
           </div>
-        )}
 
-        <button
-          onClick={() => setCollapsed(!collapsed)}
-          className="p-2 rounded-lg hover:bg-white/10 transition-all">
-          <PanelLeft
-            className={`w-5 h-5 transition-transform ${
-              collapsed ? "rotate-180" : ""
-            }`}
-          />
-        </button>
-      </div>
+          {/* Mobile close button */}
+          <button
+            onClick={closeMobile}
+            className="md:hidden p-2 rounded-lg hover:bg-white/10 transition-all"
+            aria-label="Close menu">
+            <X className="w-5 h-5" />
+          </button>
 
-      {/* MENU */}
-      <div className="flex-1 space-y-2 px-2">
-        {menu.map((item, i) => {
-          const Icon = item.icon;
-          const active = pathname === item.path;
+          {/* Desktop collapse button */}
+          <button
+            onClick={() => setCollapsed(!collapsed)}
+            className="hidden md:block p-2 rounded-lg hover:bg-white/10 transition-all"
+            aria-label="Toggle sidebar">
+            <PanelLeft
+              className={`w-5 h-5 transition-transform ${
+                collapsed ? "rotate-180" : ""
+              }`}
+            />
+          </button>
+        </div>
 
-          return (
-            <Tooltip key={i}>
-              <TooltipTrigger asChild>
-                <div
-                  onClick={() => router.push(item.path)}
-                  className={`
-        flex items-center ${collapsed ? "justify-center" : "gap-3"}
-        px-3 py-3 rounded-lg cursor-pointer transition
-        ${
-          active
-            ? "bg-gradient-to-r from-[#153DA3] to-[#23E8AD]"
-            : "text-gray-300 hover:bg-white/10"
-        }
-      `}>
-                  <Icon className="w-5 h-5" />
-                  {!collapsed && <span>{item.name}</span>}
-                </div>
-              </TooltipTrigger>
+        {/* MENU */}
+        <div className="flex-1 space-y-2 px-2 overflow-y-auto">
+          {menu.map((item, i) => {
+            const Icon = item.icon;
+            const active = pathname === item.path;
 
-              {collapsed && (
-                <TooltipContent side="right">{item.name}</TooltipContent>
-              )}
-            </Tooltip>
-          );
-        })}
-      </div>
-    </div>
+            return (
+              <Tooltip key={i}>
+                <TooltipTrigger asChild>
+                  <div
+                    onClick={() => {
+                      router.push(item.path);
+                      closeMobile();
+                    }}
+                    className={`
+                      flex items-center gap-3 px-3 py-3 rounded-lg cursor-pointer transition
+                      ${collapsed ? "md:justify-center md:gap-0" : ""}
+                      ${
+                        active
+                          ? "bg-gradient-to-r from-[#153DA3] to-[#23E8AD]"
+                          : "text-gray-300 hover:bg-white/10"
+                      }
+                    `}>
+                    <Icon className="w-5 h-5 shrink-0" />
+                    <span className={collapsed ? "md:hidden" : ""}>
+                      {item.name}
+                    </span>
+                  </div>
+                </TooltipTrigger>
+
+                {collapsed && (
+                  <TooltipContent side="right" className="hidden md:block">
+                    {item.name}
+                  </TooltipContent>
+                )}
+              </Tooltip>
+            );
+          })}
+        </div>
+      </aside>
+    </>
   );
 }

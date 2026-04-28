@@ -18,7 +18,9 @@ export default function PortfolioDrawer({ open, onOpenChange, data }: Props) {
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-[400px] p-0">
+      <SheetContent
+        side="right"
+        className="w-full sm:max-w-md sm:w-[400px] p-0">
         <div className="bg-white h-full flex flex-col">
           {/* HEADER */}
           <SheetHeader className="p-4 border-b">

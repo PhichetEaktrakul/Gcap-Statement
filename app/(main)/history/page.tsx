@@ -2,7 +2,6 @@
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import Topbar from "@/components/topbar";
 import {
   Table,
   TableHeader,
@@ -22,47 +21,53 @@ import { Input } from "@/components/ui/input";
 
 export default function HistoryPage() {
   return (
-    <>    <Topbar />
-    <div className="p-6 space-y-6">
+    <div className="p-4 md:p-6 space-y-4 md:space-y-6">
       {/* TITLE */}
-      <h1 className="text-xl font-semibold">History</h1>
+      <h1 className="text-lg md:text-xl font-semibold">History</h1>
 
       {/* FILTER */}
       <Card className="rounded-xl">
-        <CardContent className="p-5 flex flex-wrap gap-4 items-center">
-          {/* Search */}
-          <Input placeholder="ค้นหา Ticket..." className="w-[220px]" />
+        <CardContent className="p-4 md:p-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:flex lg:flex-wrap gap-3 md:gap-4 lg:items-center">
+            {/* Search */}
+            <Input
+              placeholder="ค้นหา Ticket..."
+              className="w-full lg:w-[220px]"
+            />
 
-          {/* Asset */}
-          <Select>
-            <SelectTrigger className="w-[160px]">
-              <SelectValue placeholder="ทุกทรัพย์สิน" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">ทุกทรัพย์สิน</SelectItem>
-              <SelectItem value="96">96.50%</SelectItem>
-              <SelectItem value="99">99.99%</SelectItem>
-            </SelectContent>
-          </Select>
+            {/* Asset */}
+            <Select>
+              <SelectTrigger className="w-full lg:w-[160px]">
+                <SelectValue placeholder="ทุกทรัพย์สิน" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">ทุกทรัพย์สิน</SelectItem>
+                <SelectItem value="96">96.50%</SelectItem>
+                <SelectItem value="99">99.99%</SelectItem>
+              </SelectContent>
+            </Select>
 
-          {/* Type */}
-          <Select>
-            <SelectTrigger className="w-[140px]">
-              <SelectValue placeholder="ทุกคำสั่ง" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">ทุกคำสั่ง</SelectItem>
-              <SelectItem value="buy">ซื้อ</SelectItem>
-              <SelectItem value="sell">ขาย</SelectItem>
-            </SelectContent>
-          </Select>
+            {/* Type */}
+            <Select>
+              <SelectTrigger className="w-full lg:w-[140px]">
+                <SelectValue placeholder="ทุกคำสั่ง" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">ทุกคำสั่ง</SelectItem>
+                <SelectItem value="buy">ซื้อ</SelectItem>
+                <SelectItem value="sell">ขาย</SelectItem>
+              </SelectContent>
+            </Select>
 
-          {/* Date */}
-          <Input type="date" className="w-[150px]" />
-          <Input type="date" className="w-[150px]" />
+            {/* Date */}
+            <Input type="date" className="w-full lg:w-[150px]" />
+            <Input type="date" className="w-full lg:w-[150px]" />
 
-          {/* Button */}
-          <Button className="bg-blue-600 hover:bg-blue-700">ค้นหา</Button>
+            {/* Button */}
+            <Button className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700">
+              ค้นหา
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
@@ -181,7 +186,7 @@ export default function HistoryPage() {
           </Table>
 
           {/* PAGINATION */}
-          <div className="flex justify-between items-center p-4 text-sm text-gray-500">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 p-4 text-sm text-gray-500">
             <span>แสดง 1–5 จาก 118</span>
 
             <div className="flex items-center gap-2">
@@ -196,7 +201,5 @@ export default function HistoryPage() {
         </CardContent>
       </Card>
     </div>
-    </>
-
   );
 }
