@@ -17,7 +17,7 @@ export default function ProfilePopover() {
             WM
           </div>
 
-          <span className="text-sm text-gray-300">CA80555</span>
+          <span className="hidden md:inline text-sm text-gray-300">CA80555</span>
         </div>
       </PopoverTrigger>
 

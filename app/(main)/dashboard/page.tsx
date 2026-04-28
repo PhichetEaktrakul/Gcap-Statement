@@ -1,8 +1,14 @@
 import { Card, CardContent } from "@/components/ui/card";
+import PriceTicker from "@/components/price-ticker";
 
 export default function DashboardPage() {
   return (
     <div className="p-4 md:p-6 space-y-4 md:space-y-6">
+      {/* PRICE TICKER (mobile only) */}
+      <div className="md:hidden">
+        <PriceTicker />
+      </div>
+
       {/* TITLE */}
       <h1 className="text-lg md:text-xl font-semibold">หลักประกัน</h1>
 
