@@ -21,8 +21,8 @@ export default function BottomNav() {
 
   return (
     <nav
-      className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-gray-200 pb-[env(safe-area-inset-bottom)]"
-      style={{ boxShadow: "0 -2px 12px rgba(0,0,0,0.04)" }}
+      className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-[#0b1a3a] border-t border-white/10 text-white pb-[env(safe-area-inset-bottom)]"
+      style={{ boxShadow: "0 -2px 12px rgba(0,0,0,0.25)" }}
       aria-label="Primary">
       <div className="grid grid-cols-4">
         {items.map((item) => {
@@ -32,10 +32,13 @@ export default function BottomNav() {
             <button
               key={item.path}
               onClick={() => router.push(item.path)}
-              className={`flex flex-col items-center justify-center gap-1 py-2.5 text-[11px] font-medium transition-colors ${
-                active ? "text-blue-600" : "text-gray-500 hover:text-gray-700"
+              className={`relative flex flex-col items-center justify-center gap-1 py-2.5 text-[11px] font-medium transition-colors ${
+                active ? "text-white" : "text-gray-400 hover:text-gray-200"
               }`}
               aria-current={active ? "page" : undefined}>
+              {active && (
+                <span className="absolute top-0 inset-x-5 h-0.5 rounded-full bg-gradient-to-r from-[#153DA3] to-[#23E8AD]" />
+              )}
               <Icon className="w-5 h-5" />
               <span>{item.name}</span>
             </button>

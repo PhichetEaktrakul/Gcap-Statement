@@ -29,13 +29,11 @@ export default function Topbar() {
 
   return (
     <>
-      {/* MOBILE topbar — light, with brand on the left */}
-      <div className="md:hidden h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 shrink-0">
-        <div className="font-bold text-[#0b1a3a] text-lg tracking-wide">
-          GCAP
-        </div>
+      {/* MOBILE topbar */}
+      <div className="md:hidden h-16 bg-[#0b1a3a] border-b border-white/10 flex items-center justify-between px-4 shrink-0 text-white">
+        <div className="font-bold text-lg tracking-wide">GCAP</div>
         <div className="flex items-center gap-3">
-          <div className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs whitespace-nowrap">
+          <div className="bg-green-500/10 text-green-400 px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap">
             {time}
           </div>
           <ProfilePopover />
