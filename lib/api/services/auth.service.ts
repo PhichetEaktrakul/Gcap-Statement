@@ -3,30 +3,37 @@ import { ENDPOINTS } from "../endpoints";
 import type { ApiResponse } from "../types";
 
 export type LoginPayload = {
-  phone: string;
+  code: string;
+  password: string;
 };
 
 export type LoginResponse = {
-  refId: string;
-  expiresAt: string;
+  token: string;
+};
+
+export type ForgotPasswordPayload = {
+  code: string;
+  phoneNumber: string;
+};
+
+export type ForgotPasswordResponse = {
+  stage1Token: string;
+  refCode: string;
 };
 
 export type VerifyOtpPayload = {
-  refId: string;
-  code: string;
-};
-
-export type AuthUser = {
-  customerId: string;
-  name: string;
-  phone: string;
-  bankName?: string;
-  bankAccount?: string;
+  otp: string;
+  refCode: string;
 };
 
 export type VerifyOtpResponse = {
-  accessToken: string;
-  user: AuthUser;
+  stage2Token: string;
+  expiresInSeconds: number;
+};
+
+export type SetPasswordPayload = {
+  newPassword: string;
+  confirmPassword: string;
 };
 
 export const authService = {
@@ -35,18 +42,30 @@ export const authService = {
       .post<ApiResponse<LoginResponse>>(ENDPOINTS.auth.login, payload)
       .then((r) => r.data),
 
-  verifyOtp: (payload: VerifyOtpPayload) =>
+  forgotPassword: (payload: ForgotPasswordPayload) =>
     apiClient
-      .post<ApiResponse<VerifyOtpResponse>>(ENDPOINTS.auth.verifyOtp, payload)
+      .post<ApiResponse<ForgotPasswordResponse>>(
+        ENDPOINTS.auth.forgotPassword,
+        payload
+      )
+      .then((r) => r.data),
+
+  verifyOtp: (payload: VerifyOtpPayload, stage1Token: string) =>
+    apiClient
+      .post<ApiResponse<VerifyOtpResponse>>(ENDPOINTS.auth.verifyOtp, payload, {
+        headers: { Authorization: `Bearer ${stage1Token}` },
+      })
+      .then((r) => r.data),
+
+  setPassword: (payload: SetPasswordPayload, stage2Token: string) =>
+    apiClient
+      .post<ApiResponse<null>>(ENDPOINTS.auth.setPassword, payload, {
+        headers: { Authorization: `Bearer ${stage2Token}` },
+      })
       .then((r) => r.data),
 
   logout: () =>
     apiClient
       .post<ApiResponse<null>>(ENDPOINTS.auth.logout)
-      .then((r) => r.data),
-
-  me: () =>
-    apiClient
-      .get<ApiResponse<AuthUser>>(ENDPOINTS.auth.me)
       .then((r) => r.data),
 };

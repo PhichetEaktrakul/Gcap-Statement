@@ -1,7 +1,9 @@
 export const ENDPOINTS = {
   auth: {
     login: "/auth/login",
+    forgotPassword: "/auth/forgot-password",
     verifyOtp: "/auth/verify-otp",
+    setPassword: "/auth/set-password",
     logout: "/auth/logout",
     me: "/auth/me",
   },
