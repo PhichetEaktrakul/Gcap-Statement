@@ -16,6 +16,15 @@ function fmt(value: number | undefined | null, maxFraction = 2): string {
   });
 }
 
+function fmtGold(value: number | undefined | null): string {
+  if (value === undefined || value === null) return "—";
+  const isWhole = Number.isInteger(value);
+  return value.toLocaleString("en-US", {
+    minimumFractionDigits: isWhole ? 0 : 5,
+    maximumFractionDigits: 5,
+  });
+}
+
 export default function DashboardPage() {
   const [assets, setAssets] = useState<CustomerAssets | null>(null);
   const [margin, setMargin] = useState<CustomerMarginCover | null>(null);
@@ -51,7 +60,7 @@ export default function DashboardPage() {
           <CardContent className="p-4 md:p-5">
             <div className="text-sm text-gray-500">ทองฝาก GOLD 96.50%</div>
             <div className="text-xl md:text-2xl font-bold mt-2">
-              {fmt(assets?.gold965, 5)} BAHT
+              {fmtGold(assets?.gold965)} BAHT
             </div>
           </CardContent>
         </Card>
@@ -60,7 +69,7 @@ export default function DashboardPage() {
           <CardContent className="p-4 md:p-5">
             <div className="text-sm text-gray-500">ทองฝาก GOLD 99.99%</div>
             <div className="text-xl md:text-2xl font-bold mt-2">
-              {fmt(assets?.gold999, 5)} KG
+              {fmtGold(assets?.gold999)} KG
             </div>
           </CardContent>
         </Card>
