@@ -1,7 +1,37 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import PriceTicker from "@/components/price-ticker";
+import {
+  customerService,
+  type CustomerAssets,
+  type CustomerMarginCover,
+} from "@/lib/api/services/customer.service";
+
+function fmt(value: number | undefined | null, fractionDigits = 2): string {
+  if (value === undefined || value === null) return "—";
+  return value.toLocaleString("en-US", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: fractionDigits,
+  });
+}
 
 export default function DashboardPage() {
+  const [assets, setAssets] = useState<CustomerAssets | null>(null);
+  const [margin, setMargin] = useState<CustomerMarginCover | null>(null);
+
+  useEffect(() => {
+    customerService
+      .getAssets()
+      .then((res) => setAssets(res.data))
+      .catch(() => {});
+    customerService
+      .getMarginCover()
+      .then((res) => setMargin(res.data))
+      .catch(() => {});
+  }, []);
+
   return (
     <div className="p-4 md:p-6 space-y-4 md:space-y-6">
       {/* PRICE TICKER (mobile only) */}
@@ -18,7 +48,7 @@ export default function DashboardPage() {
           <CardContent className="p-4 md:p-5">
             <div className="text-sm text-gray-500">เงินฝาก</div>
             <div className="text-xl md:text-2xl font-bold mt-2">
-              200,000 THB
+              {fmt(assets?.cashAmount)} THB
             </div>
           </CardContent>
         </Card>
@@ -26,19 +56,23 @@ export default function DashboardPage() {
         <Card className="rounded-xl">
           <CardContent className="p-4 md:p-5">
             <div className="text-sm text-gray-500">ทองฝาก GOLD 96.50%</div>
-            <div className="text-xl md:text-2xl font-bold mt-2">80 BAHT</div>
+            <div className="text-xl md:text-2xl font-bold mt-2">
+              {fmt(assets?.gold965)} BAHT
+            </div>
           </CardContent>
         </Card>
 
         <Card className="rounded-xl sm:col-span-2 lg:col-span-1">
           <CardContent className="p-4 md:p-5">
             <div className="text-sm text-gray-500">ทองฝาก GOLD 99.99%</div>
-            <div className="text-xl md:text-2xl font-bold mt-2">3 KG</div>
+            <div className="text-xl md:text-2xl font-bold mt-2">
+              {fmt(assets?.gold999)} KG
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* TABLE */}
+      {/* MARGIN COVER TABLE */}
       <Card className="rounded-xl">
         <CardContent className="p-4 md:p-5">
           <div className="grid grid-cols-3 text-xs md:text-sm text-gray-500 pb-3 border-b">
@@ -49,14 +83,14 @@ export default function DashboardPage() {
 
           <div className="grid grid-cols-3 py-3 md:py-4 border-b text-xs md:text-sm">
             <div className="text-blue-600">99.99%</div>
-            <div className="text-center">49 KG</div>
-            <div className="text-center">49 KG</div>
+            <div className="text-center">{fmt(margin?.canBuy9999)} KG</div>
+            <div className="text-center">{fmt(margin?.canSell9999)} KG</div>
           </div>
 
           <div className="grid grid-cols-3 py-3 md:py-4 text-xs md:text-sm">
             <div className="text-blue-600">96.50%</div>
-            <div className="text-center">3,385 BAHT</div>
-            <div className="text-center">3,435 BAHT</div>
+            <div className="text-center">{fmt(margin?.canBuy9650)} BAHT</div>
+            <div className="text-center">{fmt(margin?.canSell9650)} BAHT</div>
           </div>
         </CardContent>
       </Card>

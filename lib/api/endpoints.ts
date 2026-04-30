@@ -23,4 +23,11 @@ export const ENDPOINTS = {
     create: "/leave-orders",
     cancel: (id: string) => `/leave-orders/${id}/cancel`,
   },
+  gcalltrade: {
+    customer: {
+      profile: "/gcalltrade/customer/profile",
+      assets: "/gcalltrade/customer/assets",
+      marginCover: "/gcalltrade/customer/margin-cover",
+    },
+  },
 } as const;
