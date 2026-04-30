@@ -2,18 +2,17 @@
 
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import PriceTicker from "@/components/price-ticker";
 import {
   customerService,
   type CustomerAssets,
   type CustomerMarginCover,
 } from "@/lib/api/services/customer.service";
 
-function fmt(value: number | undefined | null, fractionDigits = 2): string {
+function fmt(value: number | undefined | null, maxFraction = 2): string {
   if (value === undefined || value === null) return "—";
   return value.toLocaleString("en-US", {
     minimumFractionDigits: 0,
-    maximumFractionDigits: fractionDigits,
+    maximumFractionDigits: maxFraction,
   });
 }
 
@@ -34,11 +33,6 @@ export default function DashboardPage() {
 
   return (
     <div className="p-4 md:p-6 space-y-4 md:space-y-6">
-      {/* PRICE TICKER (mobile only) */}
-      <div className="md:hidden">
-        <PriceTicker />
-      </div>
-
       {/* TITLE */}
       <h1 className="text-lg md:text-xl font-semibold">หลักประกัน</h1>
 
@@ -57,7 +51,7 @@ export default function DashboardPage() {
           <CardContent className="p-4 md:p-5">
             <div className="text-sm text-gray-500">ทองฝาก GOLD 96.50%</div>
             <div className="text-xl md:text-2xl font-bold mt-2">
-              {fmt(assets?.gold965)} BAHT
+              {fmt(assets?.gold965, 5)} BAHT
             </div>
           </CardContent>
         </Card>
@@ -66,7 +60,7 @@ export default function DashboardPage() {
           <CardContent className="p-4 md:p-5">
             <div className="text-sm text-gray-500">ทองฝาก GOLD 99.99%</div>
             <div className="text-xl md:text-2xl font-bold mt-2">
-              {fmt(assets?.gold999)} KG
+              {fmt(assets?.gold999, 5)} KG
             </div>
           </CardContent>
         </Card>
@@ -83,14 +77,14 @@ export default function DashboardPage() {
 
           <div className="grid grid-cols-3 py-3 md:py-4 border-b text-xs md:text-sm">
             <div className="text-blue-600">99.99%</div>
-            <div className="text-center">{fmt(margin?.canBuy9999)} KG</div>
             <div className="text-center">{fmt(margin?.canSell9999)} KG</div>
+            <div className="text-center">{fmt(margin?.canBuy9999)} KG</div>
           </div>
 
           <div className="grid grid-cols-3 py-3 md:py-4 text-xs md:text-sm">
             <div className="text-blue-600">96.50%</div>
-            <div className="text-center">{fmt(margin?.canBuy9650)} BAHT</div>
             <div className="text-center">{fmt(margin?.canSell9650)} BAHT</div>
+            <div className="text-center">{fmt(margin?.canBuy9650)} BAHT</div>
           </div>
         </CardContent>
       </Card>

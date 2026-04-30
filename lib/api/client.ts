@@ -51,12 +51,69 @@ apiClient.interceptors.request.use(
   (error: AxiosError) => Promise.reject(error)
 );
 
+// Refresh-token plumbing — single in-flight refresh, queued retries.
+type RefreshResponse = {
+  success: boolean;
+  data: { token: string };
+};
+
+let refreshingPromise: Promise<string> | null = null;
+
+function performRefresh(): Promise<string> {
+  if (refreshingPromise) return refreshingPromise;
+  refreshingPromise = axios
+    .post<RefreshResponse>(
+      `${baseURL}/auth/refresh`,
+      {},
+      {
+        withCredentials: true,
+        headers: { "Content-Type": "application/json" },
+      }
+    )
+    .then((res) => {
+      const token = res.data?.data?.token;
+      if (!token) throw new Error("Missing token in refresh response");
+      setAccessToken(token);
+      return token;
+    })
+    .finally(() => {
+      refreshingPromise = null;
+    });
+  return refreshingPromise;
+}
+
 apiClient.interceptors.response.use(
   (response) => response,
-  (error: AxiosError) => {
-    if (error.response?.status === 401) {
-      setAccessToken(null);
+  async (error: AxiosError) => {
+    const original = error.config as
+      | (InternalAxiosRequestConfig & { _retried?: boolean })
+      | undefined;
+    const status = error.response?.status;
+
+    if (!original || status !== 401) {
+      return Promise.reject(error);
     }
-    return Promise.reject(error);
+
+    // Skip refresh for auth endpoints (login, refresh itself, registration stages).
+    const url = original.url ?? "";
+    if (url.includes("/auth/") || original._retried) {
+      return Promise.reject(error);
+    }
+
+    original._retried = true;
+
+    try {
+      const newToken = await performRefresh();
+      if (original.headers) {
+        original.headers.set("Authorization", `Bearer ${newToken}`);
+      }
+      return apiClient.request(original);
+    } catch (refreshErr) {
+      setAccessToken(null);
+      if (typeof window !== "undefined") {
+        window.location.href = "/login";
+      }
+      return Promise.reject(refreshErr);
+    }
   }
 );
