@@ -30,6 +30,7 @@ import {
   type TicketHistoryItem,
   type TicketHistoryParams,
 } from "@/lib/api/services/trade.service";
+import { maskDdMmYyyy, parseDdMmYyyy } from "@/lib/date";
 
 const PAGE_SIZE = 10;
 
@@ -97,9 +98,10 @@ export default function HistoryPage() {
       params["Filter.Command"] = Number(appliedFilters.command) as 1 | 2;
     if (appliedFilters.asset !== "all")
       params["Filter.AssetId"] = Number(appliedFilters.asset) as 1 | 2;
-    if (appliedFilters.dateFrom)
-      params["Filter.DateFrom"] = appliedFilters.dateFrom;
-    if (appliedFilters.dateTo) params["Filter.DateTo"] = appliedFilters.dateTo;
+    const fromIso = parseDdMmYyyy(appliedFilters.dateFrom);
+    if (fromIso) params["Filter.DateFrom"] = fromIso;
+    const toIso = parseDdMmYyyy(appliedFilters.dateTo);
+    if (toIso) params["Filter.DateTo"] = toIso;
 
     let cancelled = false;
     setLoading(true);
@@ -184,19 +186,29 @@ export default function HistoryPage() {
               </Select>
 
               <Input
-                type="date"
+                type="text"
+                inputMode="numeric"
+                placeholder="dd/mm/yyyy"
                 className="w-full lg:w-[150px]"
                 value={filters.dateFrom}
                 onChange={(e) =>
-                  setFilters({ ...filters, dateFrom: e.target.value })
+                  setFilters({
+                    ...filters,
+                    dateFrom: maskDdMmYyyy(e.target.value),
+                  })
                 }
               />
               <Input
-                type="date"
+                type="text"
+                inputMode="numeric"
+                placeholder="dd/mm/yyyy"
                 className="w-full lg:w-[150px]"
                 value={filters.dateTo}
                 onChange={(e) =>
-                  setFilters({ ...filters, dateTo: e.target.value })
+                  setFilters({
+                    ...filters,
+                    dateTo: maskDdMmYyyy(e.target.value),
+                  })
                 }
               />
 

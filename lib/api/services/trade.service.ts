@@ -42,12 +42,40 @@ export type TicketHistoryParams = {
   "Filter.DateTo"?: string;
 };
 
+export type LeaveOrderStatusText =
+  | "complete"
+  | "cancelled"
+  | "pending"
+  | "other"
+  | string;
+
+export type LeaveOrderItem = {
+  leaveCode: string;
+  createDate: string;
+  command: TicketCommand;
+  orderTypeText: string;
+  asset: TicketAsset;
+  assetTypeText: string;
+  quantity: number;
+  quantityTypeText: QuantityType;
+  pricePerUnit: number;
+  leaveStatus: number;
+  statusText: LeaveOrderStatusText;
+};
+
 export const tradeService = {
   getTicketHistory: (params: TicketHistoryParams) =>
     apiClient
       .get<ApiResponse<TicketHistoryPage>>(
         ENDPOINTS.gcalltrade.trade.ticketsHistory,
         { params }
+      )
+      .then((r) => r.data),
+
+  getLeaveOrders: () =>
+    apiClient
+      .get<ApiResponse<LeaveOrderItem[]>>(
+        ENDPOINTS.gcalltrade.trade.leaveOrders
       )
       .then((r) => r.data),
 };

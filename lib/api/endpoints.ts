@@ -32,6 +32,7 @@ export const ENDPOINTS = {
     },
     trade: {
       ticketsHistory: "/gcalltrade/trade/tickets/history",
+      leaveOrders: "/gcalltrade/trade/leave-orders",
     },
   },
 } as const;
