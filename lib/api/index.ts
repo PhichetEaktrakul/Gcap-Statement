@@ -5,6 +5,7 @@ export * from "./auth-storage";
 export * from "./services/auth.service";
 export * from "./services/customer.service";
 export * from "./services/dashboard.service";
+export * from "./services/trade.service";
 export * from "./services/portfolio.service";
 export * from "./services/history.service";
 export * from "./services/leave-order.service";

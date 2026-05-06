@@ -30,5 +30,8 @@ export const ENDPOINTS = {
       assets: "/gcalltrade/customer/assets",
       marginCover: "/gcalltrade/customer/margin-cover",
     },
+    trade: {
+      ticketsHistory: "/gcalltrade/trade/tickets/history",
+    },
   },
 } as const;

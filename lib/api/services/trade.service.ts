@@ -1,0 +1,53 @@
+import { apiClient } from "../client";
+import { ENDPOINTS } from "../endpoints";
+import type { ApiResponse } from "../types";
+
+export type TicketChannel = "C" | "L";
+export type TicketCommand = 1 | 2; // 1 = sell, 2 = buy
+export type TicketAsset = 1 | 2;   // 1 = 9999, 2 = 9650
+export type QuantityType = "kg" | "baht";
+
+export type TicketHistoryItem = {
+  createDate: string;
+  ticketType: TicketChannel;
+  ticketCode: string;
+  orderTypeText: string;
+  command: TicketCommand;
+  asset: TicketAsset;
+  assetPurity: string;
+  quantity: number;
+  quantityTypeText: QuantityType;
+  pricePerUnit: number;
+  totalPrice: number;
+  ticketBy: string;
+};
+
+export type TicketHistoryPage = {
+  items: TicketHistoryItem[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+};
+
+export type TicketHistoryParams = {
+  Page?: number;
+  PageSize?: number;
+  SearchTerm?: string;
+  "Filter.Command"?: TicketCommand;
+  "Filter.AssetId"?: TicketAsset;
+  "Filter.DateFrom"?: string;
+  "Filter.DateTo"?: string;
+};
+
+export const tradeService = {
+  getTicketHistory: (params: TicketHistoryParams) =>
+    apiClient
+      .get<ApiResponse<TicketHistoryPage>>(
+        ENDPOINTS.gcalltrade.trade.ticketsHistory,
+        { params }
+      )
+      .then((r) => r.data),
+};

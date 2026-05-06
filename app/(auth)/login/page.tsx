@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -14,7 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { authService } from "@/lib/api/services/auth.service";
-import { setAccessToken } from "@/lib/api/client";
+import { getAccessToken, setAccessToken } from "@/lib/api/client";
 import { registrationStorage } from "@/lib/api/auth-storage";
 
 function getErrorMessage(err: unknown, fallback: string): string {
@@ -29,6 +29,12 @@ export default function AuthPage() {
   const router = useRouter();
   const [tab, setTab] = useState("login");
   const [step, setStep] = useState(1);
+
+  useEffect(() => {
+    if (getAccessToken()) {
+      router.replace("/dashboard");
+    }
+  }, [router]);
 
   // Login
   const [loginCode, setLoginCode] = useState("");
