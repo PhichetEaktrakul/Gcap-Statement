@@ -37,6 +37,6 @@ export const ENDPOINTS = {
     },
   },
   gold: {
-    latest: "/gold-gcap/latest",
+    latest: "/api/gold-gcap/latest",
   },
 } as const;

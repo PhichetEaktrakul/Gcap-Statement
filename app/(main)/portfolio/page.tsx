@@ -35,14 +35,12 @@ import { parseDdMmYyyy } from "@/lib/date";
 const PAGE_SIZE = 10;
 
 type Filters = {
-  asset: string;
   command: string;
   dateFrom: string;
   dateTo: string;
 };
 
 const initialFilters: Filters = {
-  asset: "all",
   command: "all",
   dateFrom: "",
   dateTo: "",
@@ -58,18 +56,17 @@ type GoldPrices = {
 function fmtDateTime(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "—";
-  const yyyy = String((d.getFullYear() + 543) % 100).padStart(2, "0");
+  const yy = String((d.getFullYear() + 543) % 100).padStart(2, "0");
   const mm = String(d.getMonth() + 1).padStart(2, "0");
   const dd = String(d.getDate()).padStart(2, "0");
   const hh = String(d.getHours()).padStart(2, "0");
   const mi = String(d.getMinutes()).padStart(2, "0");
-  return `${dd}/${mm}/${yyyy} ${hh}:${mi}`;
+  return `${dd}/${mm}/${yy} ${hh}:${mi}`;
 }
 
 function fmtDate(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "—";
-  // Buddhist year, 2-digit (e.g. 2026 → 69)
   const yy = String((d.getFullYear() + 543) % 100).padStart(2, "0");
   const mm = String(d.getMonth() + 1).padStart(2, "0");
   const dd = String(d.getDate()).padStart(2, "0");
@@ -102,7 +99,8 @@ export default function PortfolioPage() {
   const [filters, setFilters] = useState<Filters>(initialFilters);
   const [appliedFilters, setAppliedFilters] =
     useState<Filters>(initialFilters);
-  const [page, setPage] = useState(1);
+  const [page96, setPage96] = useState(1);
+  const [page99, setPage99] = useState(1);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [drawerItem, setDrawerItem] = useState<ActiveTicketItem | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -148,11 +146,6 @@ export default function PortfolioPage() {
 
     return allItems.filter((item) => {
       if (
-        appliedFilters.asset !== "all" &&
-        item.asset !== Number(appliedFilters.asset)
-      )
-        return false;
-      if (
         appliedFilters.command !== "all" &&
         item.command !== Number(appliedFilters.command)
       )
@@ -166,26 +159,42 @@ export default function PortfolioPage() {
     });
   }, [allItems, appliedFilters]);
 
-  const totalCount = filtered.length;
-  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+  const items96 = useMemo(
+    () => filtered.filter((i) => i.asset === 2),
+    [filtered]
+  );
+  const items99 = useMemo(
+    () => filtered.filter((i) => i.asset === 1),
+    [filtered]
+  );
+
+  const totalPages96 = Math.max(1, Math.ceil(items96.length / PAGE_SIZE));
+  const totalPages99 = Math.max(1, Math.ceil(items99.length / PAGE_SIZE));
 
   useEffect(() => {
-    if (page > totalPages) setPage(totalPages);
-  }, [page, totalPages]);
+    if (page96 > totalPages96) setPage96(totalPages96);
+  }, [page96, totalPages96]);
+  useEffect(() => {
+    if (page99 > totalPages99) setPage99(totalPages99);
+  }, [page99, totalPages99]);
 
-  const pageItems = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-  const start = totalCount === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
-  const end = Math.min(page * PAGE_SIZE, totalCount);
+  const pageItems96 = items96.slice(
+    (page96 - 1) * PAGE_SIZE,
+    page96 * PAGE_SIZE
+  );
+  const pageItems99 = items99.slice(
+    (page99 - 1) * PAGE_SIZE,
+    page99 * PAGE_SIZE
+  );
 
-  const qty96 = filtered
-    .filter((i) => i.asset === 2)
-    .reduce((sum, i) => sum + Math.abs(i.quantity), 0);
-  const qty99 = filtered
-    .filter((i) => i.asset === 1)
-    .reduce((sum, i) => sum + Math.abs(i.quantity), 0);
+  const qty96 = items96.reduce((s, i) => s + Math.abs(i.quantity), 0);
+  const qty99 = items99.reduce((s, i) => s + Math.abs(i.quantity), 0);
+  const total96 = items96.reduce((s, i) => s + Math.abs(i.totalPrice), 0);
+  const total99 = items99.reduce((s, i) => s + Math.abs(i.totalPrice), 0);
 
   function handleSearch() {
-    setPage(1);
+    setPage96(1);
+    setPage99(1);
     setAppliedFilters(filters);
   }
 
@@ -198,18 +207,12 @@ export default function PortfolioPage() {
     });
   }
 
-  const allOnPageSelected =
-    pageItems.length > 0 &&
-    pageItems.every((i) => selectedIds.has(i.ticketCode));
-
-  function toggleSelectAllOnPage() {
+  function selectAllOnPage(rows: ActiveTicketItem[]) {
     setSelectedIds((prev) => {
       const next = new Set(prev);
-      if (allOnPageSelected) {
-        pageItems.forEach((i) => next.delete(i.ticketCode));
-      } else {
-        pageItems.forEach((i) => next.add(i.ticketCode));
-      }
+      const allSelected = rows.every((i) => next.has(i.ticketCode));
+      if (allSelected) rows.forEach((i) => next.delete(i.ticketCode));
+      else rows.forEach((i) => next.add(i.ticketCode));
       return next;
     });
   }
@@ -227,24 +230,8 @@ export default function PortfolioPage() {
 
         {/* FILTER CARD */}
         <Card className="rounded-xl">
-          <CardContent className="p-4 md:p-5 space-y-4">
+          <CardContent>
             <div className="flex flex-col lg:flex-row lg:flex-wrap gap-3 md:gap-4 lg:items-center">
-              <div className="flex items-center gap-2">
-                <span className="text-sm shrink-0">Asset:</span>
-                <Select
-                  value={filters.asset}
-                  onValueChange={(v) => setFilters({ ...filters, asset: v })}>
-                  <SelectTrigger className="w-full lg:w-[140px]">
-                    <SelectValue placeholder="All" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All</SelectItem>
-                    <SelectItem value="2">96.50%</SelectItem>
-                    <SelectItem value="1">99.99%</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
               <div className="flex items-center gap-2">
                 <span className="text-sm shrink-0">คำสั่ง:</span>
                 <Select
@@ -288,133 +275,44 @@ export default function PortfolioPage() {
                 ค้นหา
               </Button>
             </div>
-
-            {/* Summary */}
-            <div className="text-xs md:text-sm text-gray-500 flex flex-wrap gap-x-4 md:gap-x-6 gap-y-1">
-              <span>QTY 96.50 : {qty96 ? fmtNumber(qty96) : "-"}</span>
-              <span>QTY 99.99 : {qty99 ? fmtNumber(qty99) : "-"}</span>
-              <span>Total : -</span>
-              <span className="text-red-500">Unrealize P/L : -3,418.39</span>
-            </div>
           </CardContent>
         </Card>
 
-        {/* TABLE */}
-        <Card className="rounded-xl">
-          <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-10">
-                    <input
-                      type="checkbox"
-                      className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                      checked={allOnPageSelected}
-                      onChange={toggleSelectAllOnPage}
-                      aria-label="Select all rows on this page"
-                    />
-                  </TableHead>
-                  <TableHead>วันที่/เวลา</TableHead>
-                  <TableHead>BY</TableHead>
-                  <TableHead>คำสั่ง</TableHead>
-                  <TableHead>ทรัพย์สิน</TableHead>
-                  <TableHead>จำนวน</TableHead>
-                  <TableHead>ราคา</TableHead>
-                  <TableHead>TOTAL</TableHead>
-                  <TableHead>UNREALIZE</TableHead>
-                  <TableHead>วันครบดีล</TableHead>
-                </TableRow>
-              </TableHeader>
+        {/* TICKET 96.50% */}
+        <TicketSection
+          title="Ticket 96.50%"
+          qtyLabel="QTY 96.50"
+          qty={qty96}
+          total={total96}
+          loading={loading}
+          items={pageItems96}
+          allItemsLength={items96.length}
+          page={page96}
+          totalPages={totalPages96}
+          onPageChange={setPage96}
+          selectedIds={selectedIds}
+          onToggleSelect={toggleSelect}
+          onSelectAllOnPage={() => selectAllOnPage(pageItems96)}
+          onOpen={openTicket}
+        />
 
-              <TableBody>
-                {loading && (
-                  <TableRow>
-                    <TableCell
-                      colSpan={10}
-                      className="text-center py-6 text-gray-500">
-                      กำลังโหลด...
-                    </TableCell>
-                  </TableRow>
-                )}
-                {!loading && pageItems.length === 0 && (
-                  <TableRow>
-                    <TableCell
-                      colSpan={10}
-                      className="text-center py-6 text-gray-500">
-                      ไม่พบรายการ
-                    </TableCell>
-                  </TableRow>
-                )}
-                {!loading &&
-                  pageItems.map((item) => {
-                    const isSelected = selectedIds.has(item.ticketCode);
-                    return (
-                      <TableRow
-                        key={item.ticketCode}
-                        className="cursor-pointer hover:bg-gray-50 transition"
-                        onClick={() => openTicket(item)}>
-                        <TableCell>
-                          <input
-                            type="checkbox"
-                            className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                            checked={isSelected}
-                            onClick={(e) => e.stopPropagation()}
-                            onChange={() => toggleSelect(item.ticketCode)}
-                            aria-label={`Select ${item.ticketCode}`}
-                          />
-                        </TableCell>
-                        <TableCell>{fmtDateTime(item.createDate)}</TableCell>
-                        <TableCell>
-                          <span
-                            className={`px-2 py-1 text-xs rounded-full ${
-                              item.ticketType === "C"
-                                ? "bg-blue-100 text-blue-500"
-                                : "bg-green-100 text-green-600"
-                            }`}>
-                            {item.ticketType}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <span
-                            className={`px-2 py-1 text-xs rounded-full ${
-                              item.command === 2
-                                ? "bg-green-100 text-green-600"
-                                : "bg-red-100 text-red-500"
-                            }`}>
-                            {commandLabel(item.command)}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          {item.asset === 1 ? "99.99%" : "96.50%"}
-                        </TableCell>
-                        <TableCell>
-                          {fmtNumber(Math.abs(item.quantity))}
-                        </TableCell>
-                        <TableCell>{fmtNumber(item.pricePerUnit)}</TableCell>
-                        <TableCell>
-                          {fmtNumber(Math.abs(item.totalPrice))}
-                        </TableCell>
-                        <TableCell className="text-red-500">-650.00</TableCell>
-                        <TableCell>{fmtDate(getDueDate(item))}</TableCell>
-                      </TableRow>
-                    );
-                  })}
-              </TableBody>
-            </Table>
-
-            {/* PAGINATION */}
-            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 p-4 text-sm text-gray-500">
-              <span>
-                แสดง {start}–{end} จาก {totalCount.toLocaleString()}
-              </span>
-              <Pagination
-                page={page}
-                totalPages={totalPages}
-                onChange={(n) => setPage(n)}
-              />
-            </div>
-          </CardContent>
-        </Card>
+        {/* TICKET 99.99% */}
+        <TicketSection
+          title="Ticket 99.99%"
+          qtyLabel="QTY 99.99"
+          qty={qty99}
+          total={total99}
+          loading={loading}
+          items={pageItems99}
+          allItemsLength={items99.length}
+          page={page99}
+          totalPages={totalPages99}
+          onPageChange={setPage99}
+          selectedIds={selectedIds}
+          onToggleSelect={toggleSelect}
+          onSelectAllOnPage={() => selectAllOnPage(pageItems99)}
+          onOpen={openTicket}
+        />
       </div>
 
       <PortfolioDrawer
@@ -423,6 +321,188 @@ export default function PortfolioPage() {
         item={drawerItem}
       />
     </>
+  );
+}
+
+function StatCard({
+  label,
+  value,
+  valueClass = "",
+}: {
+  label: string;
+  value: string;
+  valueClass?: string;
+}) {
+  return (
+    <div className="bg-gray-50 rounded-lg px-3 py-2 min-w-[110px]">
+      <div className="text-[11px] text-gray-500 leading-tight">{label}</div>
+      <div className={`font-semibold text-sm mt-0.5 ${valueClass}`}>
+        {value}
+      </div>
+    </div>
+  );
+}
+
+function TicketSection({
+  title,
+  qtyLabel,
+  qty,
+  total,
+  loading,
+  items,
+  allItemsLength,
+  page,
+  totalPages,
+  onPageChange,
+  selectedIds,
+  onToggleSelect,
+  onSelectAllOnPage,
+  onOpen,
+}: {
+  title: string;
+  qtyLabel: string;
+  qty: number;
+  total: number;
+  loading: boolean;
+  items: ActiveTicketItem[];
+  allItemsLength: number;
+  page: number;
+  totalPages: number;
+  onPageChange: (n: number) => void;
+  selectedIds: Set<string>;
+  onToggleSelect: (id: string) => void;
+  onSelectAllOnPage: () => void;
+  onOpen: (item: ActiveTicketItem) => void;
+}) {
+  const start = allItemsLength === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
+  const end = Math.min(page * PAGE_SIZE, allItemsLength);
+  const allOnPageSelected =
+    items.length > 0 && items.every((i) => selectedIds.has(i.ticketCode));
+
+  return (
+    <Card className="rounded-xl">
+      {/* HEADER WITH STATS */}
+      <div className="flex flex-col gap-3 lg:flex-row lg:justify-between lg:items-center px-4 md:px-5">
+        <h2 className="text-base md:text-lg font-semibold">{title}</h2>
+        <div className="flex flex-wrap gap-2 items-center">
+          <StatCard label={qtyLabel} value={fmtNumber(qty)} />
+          <StatCard label="Total" value={fmtNumber(total)} />
+          <StatCard label="Unrealize P/L" value="-" />
+          <Button className="bg-blue-600 hover:bg-blue-700" size="sm">
+            คำนวน
+          </Button>
+        </div>
+      </div>
+
+      {/* TABLE */}
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-10 pl-4 md:pl-5">
+              <input
+                type="checkbox"
+                className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                checked={allOnPageSelected}
+                onChange={onSelectAllOnPage}
+                aria-label="Select all rows on this page"
+              />
+            </TableHead>
+            <TableHead>วันที่/เวลา</TableHead>
+            <TableHead>BY</TableHead>
+            <TableHead>คำสั่ง</TableHead>
+            <TableHead>จำนวน</TableHead>
+            <TableHead>ราคา</TableHead>
+            <TableHead>TOTAL</TableHead>
+            <TableHead>UNREALIZE</TableHead>
+            <TableHead>วันครบดีล</TableHead>
+          </TableRow>
+        </TableHeader>
+
+        <TableBody>
+          {loading && (
+            <TableRow>
+              <TableCell
+                colSpan={9}
+                className="text-center py-6 text-gray-500">
+                กำลังโหลด...
+              </TableCell>
+            </TableRow>
+          )}
+          {!loading && items.length === 0 && (
+            <TableRow>
+              <TableCell
+                colSpan={9}
+                className="text-center py-6 text-gray-500">
+                ไม่พบรายการ
+              </TableCell>
+            </TableRow>
+          )}
+          {!loading &&
+            items.map((item) => {
+              const isSelected = selectedIds.has(item.ticketCode);
+              return (
+                <TableRow
+                  key={item.ticketCode}
+                  className="cursor-pointer hover:bg-gray-50 transition"
+                  onClick={() => onOpen(item)}>
+                  <TableCell className="pl-4 md:pl-5">
+                    <input
+                      type="checkbox"
+                      className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                      checked={isSelected}
+                      onClick={(e) => e.stopPropagation()}
+                      onChange={() => onToggleSelect(item.ticketCode)}
+                      aria-label={`Select ${item.ticketCode}`}
+                    />
+                  </TableCell>
+                  <TableCell>{fmtDateTime(item.createDate)}</TableCell>
+                  <TableCell>
+                    <span
+                      className={`px-2 py-1 text-xs rounded-full ${
+                        item.ticketType === "C"
+                          ? "bg-blue-100 text-blue-500"
+                          : "bg-green-100 text-green-600"
+                      }`}>
+                      {item.ticketType}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <span
+                      className={`px-2 py-1 text-xs rounded-full ${
+                        item.command === 2
+                          ? "bg-green-100 text-green-600"
+                          : "bg-red-100 text-red-500"
+                      }`}>
+                      {commandLabel(item.command)}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    {fmtNumber(Math.abs(item.quantity))}
+                  </TableCell>
+                  <TableCell>{fmtNumber(item.pricePerUnit)}</TableCell>
+                  <TableCell>
+                    {fmtNumber(Math.abs(item.totalPrice))}
+                  </TableCell>
+                  <TableCell className="text-red-500">-650.00</TableCell>
+                  <TableCell>{fmtDate(getDueDate(item))}</TableCell>
+                </TableRow>
+              );
+            })}
+        </TableBody>
+      </Table>
+
+      {/* PAGINATION */}
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 px-4 md:px-5 text-sm text-gray-500">
+        <span>
+          แสดง {start}–{end} จาก {allItemsLength.toLocaleString()}
+        </span>
+        <Pagination
+          page={page}
+          totalPages={totalPages}
+          onChange={onPageChange}
+        />
+      </div>
+    </Card>
   );
 }
 

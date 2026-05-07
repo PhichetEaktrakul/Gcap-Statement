@@ -5,6 +5,8 @@ import axios, {
 } from "axios";
 
 const baseURL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "/api";
+const priceURL =
+  process.env.NEXT_PUBLIC_PRICE_BASE_URL ?? "http://localhost:8080";
 
 export const apiClient: AxiosInstance = axios.create({
   baseURL,
@@ -12,6 +14,16 @@ export const apiClient: AxiosInstance = axios.create({
   withCredentials: true,
   headers: {
     "Content-Type": "application/json",
+    Accept: "application/json",
+  },
+});
+
+// Separate client for the public gold-price feed. No auth interceptors,
+// no withCredentials — it's a different host with its own contract.
+export const priceClient: AxiosInstance = axios.create({
+  baseURL: priceURL,
+  timeout: 15_000,
+  headers: {
     Accept: "application/json",
   },
 });
