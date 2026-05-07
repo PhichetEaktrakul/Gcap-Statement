@@ -69,10 +69,11 @@ function fmtDateTime(iso: string): string {
 function fmtDate(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "—";
-  const yyyy = String(d.getFullYear()).padStart(4, "0");
+  // Buddhist year, 2-digit (e.g. 2026 → 69)
+  const yy = String((d.getFullYear() + 543) % 100).padStart(2, "0");
   const mm = String(d.getMonth() + 1).padStart(2, "0");
   const dd = String(d.getDate()).padStart(2, "0");
-  return `${dd}/${mm}/${yyyy}`;
+  return `${dd}/${mm}/${yy}`;
 }
 
 function fmtNumber(n: number): string {
@@ -222,12 +223,7 @@ export default function PortfolioPage() {
     <>
       <div className="p-4 md:p-6 space-y-4 md:space-y-6">
         {/* TITLE */}
-        <div className="flex justify-between items-center gap-3">
-          <h1 className="text-lg md:text-xl font-semibold">Portfolio</h1>
-          <div className="bg-green-100 text-green-600 text-xs md:text-sm px-3 py-1 rounded-full whitespace-nowrap">
-            {totalCount} รายการ
-          </div>
-        </div>
+        <h1 className="text-lg md:text-xl font-semibold">Portfolio</h1>
 
         {/* FILTER CARD */}
         <Card className="rounded-xl">

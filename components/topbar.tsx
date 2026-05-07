@@ -1,5 +1,6 @@
 "use client";
 import ProfilePopover from "./profile-popover";
+import GcapLogo from "./gcap-logo";
 import { useEffect, useState } from "react";
 
 export default function Topbar() {
@@ -31,7 +32,9 @@ export default function Topbar() {
     <>
       {/* MOBILE topbar */}
       <div className="md:hidden h-16 bg-[#0b1a3a] border-b border-white/10 flex items-center justify-between px-4 shrink-0 text-white">
-        <div className="font-bold text-lg tracking-wide">GCAP</div>
+        <div className="bg-white rounded-lg p-1 flex items-center justify-center">
+          <GcapLogo size={28} />
+        </div>
         <div className="flex items-center gap-3">
           <div className="bg-green-500/10 text-green-400 px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap">
             {time}

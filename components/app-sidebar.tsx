@@ -14,6 +14,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import GcapLogo from "@/components/gcap-logo";
 
 const menu = [
   { name: "Dashboard", icon: LayoutDashboard, path: "/dashboard" },
@@ -39,8 +40,13 @@ export default function AppSidebar() {
           collapsed ? "justify-center" : "justify-between"
         }`}>
         {!collapsed && (
-          <div className="font-bold">
-            GCAP <span className="text-sm text-gray-300">STATEMENT</span>
+          <div className="flex items-center gap-2">
+            <div className="bg-white rounded-lg p-1 flex items-center justify-center">
+              <GcapLogo size={28} />
+            </div>
+            <span className="text-sm text-gray-300 font-medium">
+              STATEMENT
+            </span>
           </div>
         )}
 

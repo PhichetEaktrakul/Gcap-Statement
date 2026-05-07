@@ -49,30 +49,31 @@ export default function DateField({
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(maskDdMmYyyy(e.target.value))}
-        className="pr-9"
+        className="pr-10"
       />
 
-      <span className="absolute inset-y-0 right-0 flex items-center pr-2 text-gray-500">
-        <button
-          type="button"
-          onClick={openPicker}
-          aria-label="Open calendar"
-          className="p-1 rounded hover:text-gray-700">
-          <CalendarIcon className="w-4 h-4" />
-        </button>
-        <input
-          ref={dateRef}
-          type="date"
-          tabIndex={-1}
-          aria-hidden="true"
-          value={isoValue}
-          onChange={(e) => {
-            const iso = e.target.value;
-            onChange(iso ? isoDateToDdMmYyyy(iso) : "");
-          }}
-          className="absolute inset-0 opacity-0 cursor-pointer"
-        />
-      </span>
+      {/* Hidden anchor for showPicker positioning. pointer-events: none lets the
+          button on top receive every click in the icon area. */}
+      <input
+        ref={dateRef}
+        type="date"
+        value={isoValue}
+        onChange={(e) => {
+          const iso = e.target.value;
+          onChange(iso ? isoDateToDdMmYyyy(iso) : "");
+        }}
+        tabIndex={-1}
+        aria-hidden="true"
+        className="pointer-events-none absolute right-0 top-0 h-full w-10 opacity-0"
+      />
+
+      <button
+        type="button"
+        onClick={openPicker}
+        aria-label="Open calendar"
+        className="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-gray-500 hover:text-gray-700">
+        <CalendarIcon className="w-4 h-4" />
+      </button>
     </div>
   );
 }
