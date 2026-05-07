@@ -63,12 +63,23 @@ export type LeaveOrderItem = {
   statusText: LeaveOrderStatusText;
 };
 
+export type ActiveTicketItem = TicketHistoryItem & {
+  dueDate?: string;
+};
+
 export const tradeService = {
   getTicketHistory: (params: TicketHistoryParams) =>
     apiClient
       .get<ApiResponse<TicketHistoryPage>>(
         ENDPOINTS.gcalltrade.trade.ticketsHistory,
         { params }
+      )
+      .then((r) => r.data),
+
+  getActiveTickets: () =>
+    apiClient
+      .get<ApiResponse<ActiveTicketItem[]>>(
+        ENDPOINTS.gcalltrade.trade.ticketsActive
       )
       .then((r) => r.data),
 

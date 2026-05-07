@@ -14,6 +14,7 @@ import {
   customerService,
   type CustomerProfile,
 } from "@/lib/api/services/customer.service";
+import { authService } from "@/lib/api/services/auth.service";
 import { setAccessToken } from "@/lib/api/client";
 
 export default function ProfilePopover() {
@@ -21,6 +22,7 @@ export default function ProfilePopover() {
   const [open, setOpen] = useState(false);
   const [profile, setProfile] = useState<CustomerProfile | null>(null);
   const [loadedOnce, setLoadedOnce] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -40,11 +42,22 @@ export default function ProfilePopover() {
     };
   }, []);
 
-  function handleLogout() {
-    setAccessToken(null);
-    setOpen(false);
-    toast.success("ออกจากระบบสำเร็จ");
-    router.replace("/login");
+  async function handleLogout() {
+    setLoggingOut(true);
+    try {
+      const res = await authService.logout();
+      setAccessToken(null);
+      setOpen(false);
+      toast.success(res.message || "ออกจากระบบสำเร็จ");
+      router.replace("/login");
+    } catch (err) {
+      const e = err as { response?: { data?: { message?: string } } };
+      toast.error(
+        e?.response?.data?.message ?? "ออกจากระบบไม่สำเร็จ"
+      );
+    } finally {
+      setLoggingOut(false);
+    }
   }
 
   const fullName =
@@ -119,8 +132,9 @@ export default function ProfilePopover() {
             <Button
               variant="destructive"
               className="w-full"
-              onClick={handleLogout}>
-              ออกจากระบบ
+              onClick={handleLogout}
+              disabled={loggingOut}>
+              {loggingOut ? "กำลังออกจากระบบ..." : "ออกจากระบบ"}
             </Button>
           </div>
         </div>

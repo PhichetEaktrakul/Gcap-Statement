@@ -29,7 +29,8 @@ import {
   tradeService,
   type LeaveOrderItem,
 } from "@/lib/api/services/trade.service";
-import { maskDdMmYyyy, parseDdMmYyyy } from "@/lib/date";
+import { parseDdMmYyyy } from "@/lib/date";
+import DateField from "@/components/date-field";
 
 const PAGE_SIZE = 10;
 
@@ -221,31 +222,15 @@ export default function LeaveOrderPage() {
                 </SelectContent>
               </Select>
 
-              <Input
-                type="text"
-                inputMode="numeric"
-                placeholder="dd/mm/yyyy"
-                className="w-full lg:w-[150px]"
+              <DateField
                 value={filters.dateFrom}
-                onChange={(e) =>
-                  setFilters({
-                    ...filters,
-                    dateFrom: maskDdMmYyyy(e.target.value),
-                  })
-                }
+                onChange={(v) => setFilters({ ...filters, dateFrom: v })}
+                className="w-full lg:w-[170px]"
               />
-              <Input
-                type="text"
-                inputMode="numeric"
-                placeholder="dd/mm/yyyy"
-                className="w-full lg:w-[150px]"
+              <DateField
                 value={filters.dateTo}
-                onChange={(e) =>
-                  setFilters({
-                    ...filters,
-                    dateTo: maskDdMmYyyy(e.target.value),
-                  })
-                }
+                onChange={(v) => setFilters({ ...filters, dateTo: v })}
+                className="w-full lg:w-[170px]"
               />
 
               <Button

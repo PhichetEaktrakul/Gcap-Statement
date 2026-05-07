@@ -17,3 +17,9 @@ export function parseDdMmYyyy(s: string): string | null {
   if (year < 1900 || year > 2999) return null;
   return `${yyyy}-${mm}-${dd}`;
 }
+
+export function isoDateToDdMmYyyy(iso: string): string {
+  const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return "";
+  return `${m[3]}/${m[2]}/${m[1]}`;
+}
