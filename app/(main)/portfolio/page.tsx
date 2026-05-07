@@ -80,6 +80,21 @@ function fmtNumber(n: number): string {
   });
 }
 
+// Plain signed: shows the natural minus sign for negatives, no leading + for
+// positives. Used for QTY / Total stat cards.
+function fmtPlainSigned(n: number): string {
+  if (n < 0) return `-${fmtNumber(Math.abs(n))}`;
+  return fmtNumber(n);
+}
+
+// Signed with explicit + prefix and color cue. Used for Unrealize values
+// (per-row column and the aggregate stat card).
+function fmtSignedColored(n: number): { text: string; cls: string } {
+  if (n > 0) return { text: `+${fmtNumber(n)}`, cls: "text-green-600" };
+  if (n < 0) return { text: `-${fmtNumber(Math.abs(n))}`, cls: "text-red-500" };
+  return { text: fmtNumber(0), cls: "" };
+}
+
 const channelLabel = (t: string) => (t === "C" ? "Call" : "Leave Order");
 const purityLabel = (a: number) =>
   a === 1 ? "Gold 99.99%" : a === 2 ? "Gold 96.50%" : "—";
@@ -92,9 +107,32 @@ function getDueDate(item: ActiveTicketItem): string {
   return item.dueDate ?? item.createDate;
 }
 
+// Per-ticket Unrealize using current spot prices. Returns null when prices
+// are not yet loaded or the asset is unknown.
+function unrealizeOf(
+  item: ActiveTicketItem,
+  prices: GoldPrices | null
+): number | null {
+  if (!prices) return null;
+  const qtyAbs = Math.abs(item.quantity);
+  const totalAbs = Math.abs(item.totalPrice);
+
+  let spot: number | undefined;
+  if (item.asset === 2) {
+    spot = item.command === 1 ? prices.gold96_sell : prices.gold96_buy;
+  } else if (item.asset === 1) {
+    spot = item.command === 1 ? prices.gold99_sell : prices.gold99_buy;
+  }
+  if (spot === undefined) return null;
+
+  // ขาย (sell): totalPrice − spotSell × qty
+  // ซื้อ (buy):  spotBuy × qty − totalPrice
+  return item.command === 1 ? totalAbs - spot * qtyAbs : spot * qtyAbs - totalAbs;
+}
+
 export default function PortfolioPage() {
   const [allItems, setAllItems] = useState<ActiveTicketItem[]>([]);
-  const [, setGoldPrices] = useState<GoldPrices | null>(null);
+  const [goldPrices, setGoldPrices] = useState<GoldPrices | null>(null);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<Filters>(initialFilters);
   const [appliedFilters, setAppliedFilters] =
@@ -187,11 +225,6 @@ export default function PortfolioPage() {
     page99 * PAGE_SIZE
   );
 
-  const qty96 = items96.reduce((s, i) => s + Math.abs(i.quantity), 0);
-  const qty99 = items99.reduce((s, i) => s + Math.abs(i.quantity), 0);
-  const total96 = items96.reduce((s, i) => s + Math.abs(i.totalPrice), 0);
-  const total99 = items99.reduce((s, i) => s + Math.abs(i.totalPrice), 0);
-
   function handleSearch() {
     setPage96(1);
     setPage99(1);
@@ -282,14 +315,13 @@ export default function PortfolioPage() {
         <TicketSection
           title="Ticket 96.50%"
           qtyLabel="QTY 96.50"
-          qty={qty96}
-          total={total96}
           loading={loading}
-          items={pageItems96}
-          allItemsLength={items96.length}
+          allItems={items96}
+          pageItems={pageItems96}
           page={page96}
           totalPages={totalPages96}
           onPageChange={setPage96}
+          goldPrices={goldPrices}
           selectedIds={selectedIds}
           onToggleSelect={toggleSelect}
           onSelectAllOnPage={() => selectAllOnPage(pageItems96)}
@@ -300,14 +332,13 @@ export default function PortfolioPage() {
         <TicketSection
           title="Ticket 99.99%"
           qtyLabel="QTY 99.99"
-          qty={qty99}
-          total={total99}
           loading={loading}
-          items={pageItems99}
-          allItemsLength={items99.length}
+          allItems={items99}
+          pageItems={pageItems99}
           page={page99}
           totalPages={totalPages99}
           onPageChange={setPage99}
+          goldPrices={goldPrices}
           selectedIds={selectedIds}
           onToggleSelect={toggleSelect}
           onSelectAllOnPage={() => selectAllOnPage(pageItems99)}
@@ -319,6 +350,7 @@ export default function PortfolioPage() {
         open={drawerOpen}
         onOpenChange={setDrawerOpen}
         item={drawerItem}
+        goldPrices={goldPrices}
       />
     </>
   );
@@ -346,14 +378,13 @@ function StatCard({
 function TicketSection({
   title,
   qtyLabel,
-  qty,
-  total,
   loading,
-  items,
-  allItemsLength,
+  allItems,
+  pageItems,
   page,
   totalPages,
   onPageChange,
+  goldPrices,
   selectedIds,
   onToggleSelect,
   onSelectAllOnPage,
@@ -361,23 +392,62 @@ function TicketSection({
 }: {
   title: string;
   qtyLabel: string;
-  qty: number;
-  total: number;
   loading: boolean;
-  items: ActiveTicketItem[];
-  allItemsLength: number;
+  allItems: ActiveTicketItem[];
+  pageItems: ActiveTicketItem[];
   page: number;
   totalPages: number;
   onPageChange: (n: number) => void;
+  goldPrices: GoldPrices | null;
   selectedIds: Set<string>;
   onToggleSelect: (id: string) => void;
   onSelectAllOnPage: () => void;
   onOpen: (item: ActiveTicketItem) => void;
 }) {
-  const start = allItemsLength === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
-  const end = Math.min(page * PAGE_SIZE, allItemsLength);
+  const start = allItems.length === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
+  const end = Math.min(page * PAGE_SIZE, allItems.length);
   const allOnPageSelected =
-    items.length > 0 && items.every((i) => selectedIds.has(i.ticketCode));
+    pageItems.length > 0 &&
+    pageItems.every((i) => selectedIds.has(i.ticketCode));
+
+  // QTY / Total: based on rows that ARE checked.
+  const checked = allItems.filter((i) => selectedIds.has(i.ticketCode));
+  let qtyText = "--";
+  let totalText = "--";
+  if (checked.length > 0) {
+    let qSum = 0;
+    let tSum = 0;
+    for (const item of checked) {
+      const sign = item.command === 1 ? -1 : 1; // ขาย = negative, ซื้อ = positive
+      qSum += sign * Math.abs(item.quantity);
+      tSum += sign * Math.abs(item.totalPrice);
+    }
+    qtyText = fmtPlainSigned(qSum);
+    totalText = fmtPlainSigned(tSum);
+  }
+
+  // Unrealize P/L: sum of unrealize for rows that are NOT checked.
+  // "--" when every row is checked or prices haven't loaded.
+  const unchecked = allItems.filter((i) => !selectedIds.has(i.ticketCode));
+  let unrText = "--";
+  let unrCls = "";
+  if (unchecked.length > 0 && goldPrices) {
+    let sum = 0;
+    let ok = true;
+    for (const item of unchecked) {
+      const u = unrealizeOf(item, goldPrices);
+      if (u === null) {
+        ok = false;
+        break;
+      }
+      sum += u;
+    }
+    if (ok) {
+      const f = fmtSignedColored(sum);
+      unrText = f.text;
+      unrCls = f.cls;
+    }
+  }
 
   return (
     <Card className="rounded-xl">
@@ -385,9 +455,9 @@ function TicketSection({
       <div className="flex flex-col gap-3 lg:flex-row lg:justify-between lg:items-center px-4 md:px-5">
         <h2 className="text-base md:text-lg font-semibold">{title}</h2>
         <div className="flex flex-wrap gap-2 items-center">
-          <StatCard label={qtyLabel} value={fmtNumber(qty)} />
-          <StatCard label="Total" value={fmtNumber(total)} />
-          <StatCard label="Unrealize P/L" value="-" />
+          <StatCard label={qtyLabel} value={qtyText} />
+          <StatCard label="Total" value={totalText} />
+          <StatCard label="Unrealize P/L" value={unrText} valueClass={unrCls} />
           <Button className="bg-blue-600 hover:bg-blue-700" size="sm">
             คำนวน
           </Button>
@@ -428,7 +498,7 @@ function TicketSection({
               </TableCell>
             </TableRow>
           )}
-          {!loading && items.length === 0 && (
+          {!loading && pageItems.length === 0 && (
             <TableRow>
               <TableCell
                 colSpan={9}
@@ -438,8 +508,11 @@ function TicketSection({
             </TableRow>
           )}
           {!loading &&
-            items.map((item) => {
+            pageItems.map((item) => {
               const isSelected = selectedIds.has(item.ticketCode);
+              const u = unrealizeOf(item, goldPrices);
+              const uFormatted =
+                u === null ? { text: "—", cls: "" } : fmtSignedColored(u);
               return (
                 <TableRow
                   key={item.ticketCode}
@@ -483,7 +556,9 @@ function TicketSection({
                   <TableCell>
                     {fmtNumber(Math.abs(item.totalPrice))}
                   </TableCell>
-                  <TableCell className="text-red-500">-650.00</TableCell>
+                  <TableCell className={uFormatted.cls}>
+                    {uFormatted.text}
+                  </TableCell>
                   <TableCell>{fmtDate(getDueDate(item))}</TableCell>
                 </TableRow>
               );
@@ -494,7 +569,7 @@ function TicketSection({
       {/* PAGINATION */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 px-4 md:px-5 text-sm text-gray-500">
         <span>
-          แสดง {start}–{end} จาก {allItemsLength.toLocaleString()}
+          แสดง {start}–{end} จาก {allItems.length.toLocaleString()}
         </span>
         <Pagination
           page={page}
@@ -580,12 +655,18 @@ function PortfolioDrawer({
   open,
   onOpenChange,
   item,
+  goldPrices,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   item: ActiveTicketItem | null;
+  goldPrices: GoldPrices | null;
 }) {
   if (!item) return null;
+  const u = unrealizeOf(item, goldPrices);
+  const uFormatted =
+    u === null ? { text: "—", cls: "" } : fmtSignedColored(u);
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
@@ -611,8 +692,8 @@ function PortfolioDrawer({
             <Row label="Total" value={fmtNumber(Math.abs(item.totalPrice))} />
             <Row
               label="Unrealize P/L"
-              value="-650.00"
-              valueClass="text-red-500"
+              value={uFormatted.text}
+              valueClass={uFormatted.cls}
             />
             <Row label="วันครบดีล" value={fmtDate(getDueDate(item))} />
           </div>
