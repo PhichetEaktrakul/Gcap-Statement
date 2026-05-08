@@ -35,7 +35,7 @@ import { parseDdMmYyyy } from "@/lib/date";
 import DateField from "@/components/date-field";
 import DateTimeCell from "@/components/datetime-cell";
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 15;
 
 type Filters = {
   searchTerm: string;
@@ -331,8 +331,34 @@ function Pagination({
   const pages: number[] = [];
   for (let i = windowStart; i <= windowEnd; i++) pages.push(i);
 
+  const [gotoValue, setGotoValue] = useState("");
+  function commitGoto() {
+    const v = parseInt(gotoValue, 10);
+    if (Number.isFinite(v) && v >= 1 && v <= totalPages) {
+      onChange(v);
+    }
+    setGotoValue("");
+  }
+
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex flex-wrap items-center gap-2">
+      <div className="flex items-center gap-1">
+        <span className="text-xs text-gray-500">ไปหน้า</span>
+        <input
+          type="number"
+          min={1}
+          max={totalPages}
+          value={gotoValue}
+          onChange={(e) => setGotoValue(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") commitGoto();
+          }}
+          onBlur={commitGoto}
+          className="w-16 px-2 py-1 border rounded text-sm"
+          placeholder={String(page)}
+          aria-label="Go to page"
+        />
+      </div>
       <button
         className="px-2 py-1 border rounded disabled:opacity-40"
         onClick={() => onChange(page - 1)}

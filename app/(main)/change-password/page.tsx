@@ -42,7 +42,7 @@ export default function ChangePasswordPage() {
     try {
       const profile = await customerService.getProfile();
       const code = profile.data.customerCode;
-      const phone = profile.data.mobileNumber;
+      const phone = (profile.data.mobileNumber || "").replace(/\D/g, "");
       if (!code || !phone) {
         toast.error("ไม่พบข้อมูลลูกค้า ไม่สามารถเปลี่ยนรหัสผ่านได้");
         return;
