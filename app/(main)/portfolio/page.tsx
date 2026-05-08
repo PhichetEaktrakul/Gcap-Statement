@@ -25,6 +25,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import DateField from "@/components/date-field";
+import DateTimeCell from "@/components/datetime-cell";
 import {
   tradeService,
   type ActiveTicketItem,
@@ -480,10 +481,10 @@ function TicketSection({
             <TableHead>วันที่/เวลา</TableHead>
             <TableHead>BY</TableHead>
             <TableHead>คำสั่ง</TableHead>
-            <TableHead>จำนวน</TableHead>
-            <TableHead>ราคา</TableHead>
-            <TableHead>TOTAL</TableHead>
-            <TableHead>UNREALIZE</TableHead>
+            <TableHead className="text-right">จำนวน</TableHead>
+            <TableHead className="text-right">ราคา</TableHead>
+            <TableHead className="text-right">TOTAL</TableHead>
+            <TableHead className="text-right">UNREALIZE</TableHead>
             <TableHead>วันครบดีล</TableHead>
           </TableRow>
         </TableHeader>
@@ -528,7 +529,9 @@ function TicketSection({
                       aria-label={`Select ${item.ticketCode}`}
                     />
                   </TableCell>
-                  <TableCell>{fmtDateTime(item.createDate)}</TableCell>
+                  <TableCell>
+                    <DateTimeCell iso={item.createDate} />
+                  </TableCell>
                   <TableCell>
                     <span
                       className={`px-2 py-1 text-xs rounded-full ${
@@ -549,14 +552,16 @@ function TicketSection({
                       {commandLabel(item.command)}
                     </span>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="text-right tabular-nums">
                     {fmtNumber(Math.abs(item.quantity))}
                   </TableCell>
-                  <TableCell>{fmtNumber(item.pricePerUnit)}</TableCell>
-                  <TableCell>
+                  <TableCell className="text-right tabular-nums">
+                    {fmtNumber(item.pricePerUnit)}
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums">
                     {fmtNumber(Math.abs(item.totalPrice))}
                   </TableCell>
-                  <TableCell className={uFormatted.cls}>
+                  <TableCell className={`text-right tabular-nums ${uFormatted.cls}`}>
                     {uFormatted.text}
                   </TableCell>
                   <TableCell>{fmtDate(getDueDate(item))}</TableCell>

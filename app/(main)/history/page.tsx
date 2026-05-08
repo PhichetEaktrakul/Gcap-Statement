@@ -32,6 +32,7 @@ import {
 } from "@/lib/api/services/trade.service";
 import { parseDdMmYyyy } from "@/lib/date";
 import DateField from "@/components/date-field";
+import DateTimeCell from "@/components/datetime-cell";
 
 const PAGE_SIZE = 10;
 
@@ -164,10 +165,10 @@ export default function HistoryPage() {
                 value={filters.asset}
                 onValueChange={(v) => setFilters({ ...filters, asset: v })}>
                 <SelectTrigger className="w-full lg:w-[160px]">
-                  <SelectValue placeholder="ทุกทรัพย์สิน" />
+                  <SelectValue placeholder="ทรัพย์สิน" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">ทุกทรัพย์สิน</SelectItem>
+                  <SelectItem value="all">ทรัพย์สิน</SelectItem>
                   <SelectItem value="2">96.50%</SelectItem>
                   <SelectItem value="1">99.99%</SelectItem>
                 </SelectContent>
@@ -177,10 +178,10 @@ export default function HistoryPage() {
                 value={filters.command}
                 onValueChange={(v) => setFilters({ ...filters, command: v })}>
                 <SelectTrigger className="w-full lg:w-[140px]">
-                  <SelectValue placeholder="ทุกคำสั่ง" />
+                  <SelectValue placeholder="คำสั่ง" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">ทุกคำสั่ง</SelectItem>
+                  <SelectItem value="all">คำสั่ง</SelectItem>
                   <SelectItem value="2">ซื้อ</SelectItem>
                   <SelectItem value="1">ขาย</SelectItem>
                 </SelectContent>
@@ -217,9 +218,9 @@ export default function HistoryPage() {
                   <TableHead>ช่องทาง</TableHead>
                   <TableHead>คำสั่ง</TableHead>
                   <TableHead>ทรัพย์สิน</TableHead>
-                  <TableHead>จำนวน</TableHead>
-                  <TableHead>ราคา</TableHead>
-                  <TableHead>รวม</TableHead>
+                  <TableHead className="text-right">จำนวน</TableHead>
+                  <TableHead className="text-right">ราคา</TableHead>
+                  <TableHead className="text-right">รวม</TableHead>
                 </TableRow>
               </TableHeader>
 
@@ -248,7 +249,9 @@ export default function HistoryPage() {
                       key={item.ticketCode}
                       className="cursor-pointer hover:bg-gray-50 transition"
                       onClick={() => openTicket(item)}>
-                      <TableCell>{fmtDateTime(item.createDate)}</TableCell>
+                      <TableCell>
+                        <DateTimeCell iso={item.createDate} />
+                      </TableCell>
                       <TableCell>
                         <span
                           className={`px-2 py-1 text-xs rounded-full ${
@@ -272,9 +275,13 @@ export default function HistoryPage() {
                       <TableCell>
                         {item.asset === 1 ? "99.99%" : "96.50%"}
                       </TableCell>
-                      <TableCell>{fmtNumber(Math.abs(item.quantity))}</TableCell>
-                      <TableCell>{fmtNumber(item.pricePerUnit)}</TableCell>
-                      <TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {fmtNumber(Math.abs(item.quantity))}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {fmtNumber(item.pricePerUnit)}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">
                         {fmtNumber(Math.abs(item.totalPrice))}
                       </TableCell>
                     </TableRow>

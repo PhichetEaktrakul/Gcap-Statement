@@ -29,8 +29,9 @@ import {
   tradeService,
   type LeaveOrderItem,
 } from "@/lib/api/services/trade.service";
-import { parseDdMmYyyy } from "@/lib/date";
+import { dateToDdMmYyyy, parseDdMmYyyy } from "@/lib/date";
 import DateField from "@/components/date-field";
+import DateTimeCell from "@/components/datetime-cell";
 
 const PAGE_SIZE = 10;
 
@@ -42,13 +43,18 @@ type Filters = {
   dateTo: string;
 };
 
-const initialFilters: Filters = {
-  asset: "all",
-  command: "all",
-  status: "all",
-  dateFrom: "",
-  dateTo: "",
-};
+function buildInitialFilters(): Filters {
+  const today = new Date();
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(today.getDate() - 7);
+  return {
+    asset: "all",
+    command: "all",
+    status: "all",
+    dateFrom: dateToDdMmYyyy(sevenDaysAgo),
+    dateTo: dateToDdMmYyyy(today),
+  };
+}
 
 function fmtDateTime(iso: string): string {
   const d = new Date(iso);
@@ -91,9 +97,9 @@ function statusClass(s: string): string {
 export default function LeaveOrderPage() {
   const [allItems, setAllItems] = useState<LeaveOrderItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState<Filters>(initialFilters);
+  const [filters, setFilters] = useState<Filters>(buildInitialFilters);
   const [appliedFilters, setAppliedFilters] =
-    useState<Filters>(initialFilters);
+    useState<Filters>(buildInitialFilters);
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<LeaveOrderItem | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -185,10 +191,10 @@ export default function LeaveOrderPage() {
                 value={filters.asset}
                 onValueChange={(v) => setFilters({ ...filters, asset: v })}>
                 <SelectTrigger className="w-full lg:w-[160px]">
-                  <SelectValue placeholder="ทุกทรัพย์สิน" />
+                  <SelectValue placeholder="ทรัพย์สิน" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">ทุกทรัพย์สิน</SelectItem>
+                  <SelectItem value="all">ทรัพย์สิน</SelectItem>
                   <SelectItem value="2">96.50%</SelectItem>
                   <SelectItem value="1">99.99%</SelectItem>
                 </SelectContent>
@@ -198,10 +204,10 @@ export default function LeaveOrderPage() {
                 value={filters.command}
                 onValueChange={(v) => setFilters({ ...filters, command: v })}>
                 <SelectTrigger className="w-full lg:w-[140px]">
-                  <SelectValue placeholder="ทุกคำสั่ง" />
+                  <SelectValue placeholder="คำสั่ง" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">ทุกคำสั่ง</SelectItem>
+                  <SelectItem value="all">คำสั่ง</SelectItem>
                   <SelectItem value="2">ซื้อ</SelectItem>
                   <SelectItem value="1">ขาย</SelectItem>
                 </SelectContent>
@@ -211,10 +217,10 @@ export default function LeaveOrderPage() {
                 value={filters.status}
                 onValueChange={(v) => setFilters({ ...filters, status: v })}>
                 <SelectTrigger className="w-full lg:w-[140px]">
-                  <SelectValue placeholder="ทุกสถานะ" />
+                  <SelectValue placeholder="สถานะ" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">ทุกสถานะ</SelectItem>
+                  <SelectItem value="all">สถานะ</SelectItem>
                   <SelectItem value="pending">Pending</SelectItem>
                   <SelectItem value="complete">Complete</SelectItem>
                   <SelectItem value="cancelled">Cancelled</SelectItem>
@@ -251,8 +257,8 @@ export default function LeaveOrderPage() {
                   <TableHead>วันที่</TableHead>
                   <TableHead>คำสั่ง</TableHead>
                   <TableHead>ทรัพย์สิน</TableHead>
-                  <TableHead>จำนวน</TableHead>
-                  <TableHead>ราคาตั้ง</TableHead>
+                  <TableHead className="text-right">จำนวน</TableHead>
+                  <TableHead className="text-right">ราคาตั้ง</TableHead>
                   <TableHead>สถานะ</TableHead>
                 </TableRow>
               </TableHeader>
@@ -282,7 +288,9 @@ export default function LeaveOrderPage() {
                       key={item.leaveCode}
                       className="cursor-pointer hover:bg-gray-50 transition"
                       onClick={() => openOrder(item)}>
-                      <TableCell>{fmtDateTime(item.createDate)}</TableCell>
+                      <TableCell>
+                        <DateTimeCell iso={item.createDate} />
+                      </TableCell>
                       <TableCell>
                         <span
                           className={`px-2 py-1 text-xs rounded-full ${
@@ -296,8 +304,12 @@ export default function LeaveOrderPage() {
                       <TableCell>
                         {item.asset === 1 ? "99.99%" : "96.50%"}
                       </TableCell>
-                      <TableCell>{fmtNumber(Math.abs(item.quantity))}</TableCell>
-                      <TableCell>{fmtNumber(item.pricePerUnit)}</TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {fmtNumber(Math.abs(item.quantity))}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {fmtNumber(item.pricePerUnit)}
+                      </TableCell>
                       <TableCell>
                         <span
                           className={`px-3 py-1 text-xs rounded-full ${statusClass(

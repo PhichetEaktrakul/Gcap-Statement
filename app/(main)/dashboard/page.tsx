@@ -50,7 +50,7 @@ export default function DashboardPage() {
         <Card className="rounded-xl">
           <CardContent className="p-4 md:p-5">
             <div className="text-sm text-gray-500">เงินฝาก</div>
-            <div className="text-xl md:text-2xl font-bold mt-2">
+            <div className="text-xl md:text-2xl font-bold mt-2 text-right">
               {fmt(assets?.cashAmount)} THB
             </div>
           </CardContent>
@@ -59,7 +59,7 @@ export default function DashboardPage() {
         <Card className="rounded-xl">
           <CardContent className="p-4 md:p-5">
             <div className="text-sm text-gray-500">ทองฝาก GOLD 96.50%</div>
-            <div className="text-xl md:text-2xl font-bold mt-2">
+            <div className="text-xl md:text-2xl font-bold mt-2 text-right">
               {fmtGold(assets?.gold965)} BAHT
             </div>
           </CardContent>
@@ -68,7 +68,7 @@ export default function DashboardPage() {
         <Card className="rounded-xl sm:col-span-2 lg:col-span-1">
           <CardContent className="p-4 md:p-5">
             <div className="text-sm text-gray-500">ทองฝาก GOLD 99.99%</div>
-            <div className="text-xl md:text-2xl font-bold mt-2">
+            <div className="text-xl md:text-2xl font-bold mt-2 text-right">
               {fmtGold(assets?.gold999)} KG
             </div>
           </CardContent>
@@ -79,9 +79,9 @@ export default function DashboardPage() {
       <Card className="rounded-xl">
         <CardContent className="p-4 md:p-5">
           <div className="grid grid-cols-3 text-xs md:text-sm text-gray-500 pb-3 border-b">
-            <div>Margin Cover</div>
-            <div className="text-center text-green-600">ปริมาณซื้อ</div>
-            <div className="text-center text-red-500">ปริมาณขาย</div>
+            <div>ปริมาณที่ซื้อ-ขายได้</div>
+            <div className="text-center text-green-600">Buy</div>
+            <div className="text-center text-red-500">Sell</div>
           </div>
 
           <div className="grid grid-cols-3 py-3 md:py-4 border-b text-xs md:text-sm">

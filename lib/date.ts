@@ -18,6 +18,28 @@ export function parseDdMmYyyy(s: string): string | null {
   return `${yyyy}-${mm}-${dd}`;
 }
 
+export type DateTimeParts = { date: string; time: string };
+
+// Returns the dd/mm/yy (Buddhist 2-digit year) and HH:mm parts for a row cell.
+export function dateTimeParts(iso: string): DateTimeParts | null {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  const yy = String((d.getFullYear() + 543) % 100).padStart(2, "0");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mi = String(d.getMinutes()).padStart(2, "0");
+  return { date: `${dd}/${mm}/${yy}`, time: `${hh}:${mi}` };
+}
+
+// dd/mm/yyyy (4-digit CE year) — what the dd/mm/yyyy filter inputs expect.
+export function dateToDdMmYyyy(d: Date): string {
+  const yyyy = String(d.getFullYear()).padStart(4, "0");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${dd}/${mm}/${yyyy}`;
+}
+
 export function isoDateToDdMmYyyy(iso: string): string {
   const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (!m) return "";
