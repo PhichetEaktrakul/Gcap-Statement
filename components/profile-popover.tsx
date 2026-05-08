@@ -128,7 +128,16 @@ export default function ProfilePopover() {
           <Separator />
 
           {/* ACTION */}
-          <div className="p-4">
+          <div className="p-4 space-y-2">
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => {
+                setOpen(false);
+                router.push("/change-password");
+              }}>
+              เปลี่ยนรหัสผ่าน
+            </Button>
             <Button
               variant="destructive"
               className="w-full"

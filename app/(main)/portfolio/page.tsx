@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { Inbox } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -466,7 +467,8 @@ function TicketSection({
       </div>
 
       {/* TABLE */}
-      <Table>
+      <div className="px-4 md:px-5">
+        <Table>
         <TableHeader>
           <TableRow>
             <TableHead className="w-10 pl-4 md:pl-5">
@@ -501,10 +503,11 @@ function TicketSection({
           )}
           {!loading && pageItems.length === 0 && (
             <TableRow>
-              <TableCell
-                colSpan={9}
-                className="text-center py-6 text-gray-500">
-                ไม่พบรายการ
+              <TableCell colSpan={9} className="py-10">
+                <div className="flex flex-col items-center gap-2 text-gray-400">
+                  <Inbox className="w-10 h-10" strokeWidth={1.5} />
+                  <span className="text-sm">ไม่พบรายการ</span>
+                </div>
               </TableCell>
             </TableRow>
           )}
@@ -570,6 +573,7 @@ function TicketSection({
             })}
         </TableBody>
       </Table>
+      </div>
 
       {/* PAGINATION */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 px-4 md:px-5 text-sm text-gray-500">

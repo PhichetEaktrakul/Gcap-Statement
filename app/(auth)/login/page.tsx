@@ -6,30 +6,15 @@ import { toast } from "sonner";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import {
-  InputOTP,
-  InputOTPGroup,
-  InputOTPSlot,
-} from "@/components/ui/input-otp";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { authService } from "@/lib/api/services/auth.service";
 import { getAccessToken, setAccessToken } from "@/lib/api/client";
 import { registrationStorage } from "@/lib/api/auth-storage";
+import { Step1Form, Step2Form, Step3Form } from "@/components/auth-steps";
+import { isPasswordStrong } from "@/components/password-strength";
 
 type View = "login" | "register" | "forgot";
-
-const PASSWORD_CHECKS: { label: string; test: (p: string) => boolean }[] = [
-  { label: "อย่างน้อย 8 ตัวอักษร", test: (p) => p.length >= 8 },
-  { label: "มีตัวอักษรพิมพ์ใหญ่ (A–Z)", test: (p) => /[A-Z]/.test(p) },
-  { label: "มีตัวอักษรพิมพ์เล็ก (a–z)", test: (p) => /[a-z]/.test(p) },
-  { label: "มีตัวเลข (0–9)", test: (p) => /[0-9]/.test(p) },
-  { label: "มีอักขระพิเศษ (เช่น ! @ # $)", test: (p) => /[^A-Za-z0-9]/.test(p) },
-];
-
-function isPasswordStrong(p: string): boolean {
-  return PASSWORD_CHECKS.every((c) => c.test(p));
-}
 
 function getErrorMessage(err: unknown, fallback: string): string {
   const e = err as {
@@ -44,21 +29,17 @@ export default function AuthPage() {
   const [view, setView] = useState<View>("login");
   const [step, setStep] = useState(1);
 
-  // Login form
   const [loginCode, setLoginCode] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [loginLoading, setLoginLoading] = useState(false);
 
-  // Step 1 fields (shared between Register and Forgot)
   const [regCode, setRegCode] = useState("");
   const [regPhone, setRegPhone] = useState("");
   const [step1Loading, setStep1Loading] = useState(false);
 
-  // Step 2 (OTP)
   const [otp, setOtp] = useState("");
   const [otpLoading, setOtpLoading] = useState(false);
 
-  // Step 3 (password)
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [setPwLoading, setSetPwLoading] = useState(false);
@@ -246,7 +227,7 @@ export default function AuthPage() {
                 <TabsTrigger value="register">Register</TabsTrigger>
               </TabsList>
 
-              {/* ================= LOGIN ================= */}
+              {/* LOGIN */}
               <TabsContent value="login">
                 <form className="space-y-4" onSubmit={handleLogin}>
                   <div className="space-y-2">
@@ -290,7 +271,7 @@ export default function AuthPage() {
                 </form>
               </TabsContent>
 
-              {/* ================= REGISTER ================= */}
+              {/* REGISTER */}
               <TabsContent value="register">
                 {step === 1 && (
                   <Step1Form
@@ -326,207 +307,6 @@ export default function AuthPage() {
           )}
         </CardContent>
       </Card>
-    </div>
-  );
-}
-
-// ----- step components -----
-
-type Step1Props = {
-  regCode: string;
-  setRegCode: (v: string) => void;
-  regPhone: string;
-  setRegPhone: (v: string) => void;
-  loading: boolean;
-  onConfirm: () => void;
-  onCancel?: () => void;
-};
-
-function Step1Form({
-  regCode,
-  setRegCode,
-  regPhone,
-  setRegPhone,
-  loading,
-  onConfirm,
-  onCancel,
-}: Step1Props) {
-  return (
-    <div className="space-y-4">
-      <div className="space-y-2">
-        <Label>Code</Label>
-        <Input
-          type="text"
-          placeholder="Enter your code"
-          value={regCode}
-          onChange={(e) => setRegCode(e.target.value)}
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label>Phone Number</Label>
-        <Input
-          type="tel"
-          placeholder="08xxxxxxxx"
-          value={regPhone}
-          onChange={(e) => setRegPhone(e.target.value)}
-        />
-      </div>
-
-      <Button
-        className="w-full"
-        onClick={onConfirm}
-        disabled={loading || !regCode || !regPhone}>
-        {loading ? "กำลังส่ง..." : "Confirm"}
-      </Button>
-
-      {onCancel && <CancelLink onClick={onCancel} />}
-    </div>
-  );
-}
-
-type Step2Props = {
-  otp: string;
-  setOtp: (v: string) => void;
-  loading: boolean;
-  onConfirm: () => void;
-  onCancel?: () => void;
-};
-
-function Step2Form({ otp, setOtp, loading, onConfirm, onCancel }: Step2Props) {
-  return (
-    <div className="space-y-4">
-      <div className="text-sm text-gray-600 text-center">
-        A One-Time Password (OTP) has been sent to your registered phone
-        number. Please enter the 6-digit code below to verify your identity.
-        The code will expire shortly.
-      </div>
-
-      <div className="flex justify-center">
-        <InputOTP maxLength={6} value={otp} onChange={setOtp}>
-          <InputOTPGroup>
-            <InputOTPSlot index={0} />
-            <InputOTPSlot index={1} />
-            <InputOTPSlot index={2} />
-            <InputOTPSlot index={3} />
-            <InputOTPSlot index={4} />
-            <InputOTPSlot index={5} />
-          </InputOTPGroup>
-        </InputOTP>
-      </div>
-
-      <Button
-        className="w-full"
-        onClick={onConfirm}
-        disabled={loading || otp.length < 6}>
-        {loading ? "กำลังตรวจสอบ..." : "Confirm"}
-      </Button>
-
-      {onCancel && <CancelLink onClick={onCancel} />}
-    </div>
-  );
-}
-
-type Step3Props = {
-  newPassword: string;
-  setNewPassword: (v: string) => void;
-  confirmPassword: string;
-  setConfirmPassword: (v: string) => void;
-  loading: boolean;
-  submitLabel: string;
-  onConfirm: () => void;
-  onCancel?: () => void;
-};
-
-function Step3Form({
-  newPassword,
-  setNewPassword,
-  confirmPassword,
-  setConfirmPassword,
-  loading,
-  submitLabel,
-  onConfirm,
-  onCancel,
-}: Step3Props) {
-  return (
-    <div className="space-y-4">
-      <div className="space-y-2">
-        <Label>Password</Label>
-        <Input
-          type="password"
-          value={newPassword}
-          onChange={(e) => setNewPassword(e.target.value)}
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label>Confirm Password</Label>
-        <Input
-          type="password"
-          value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
-        />
-      </div>
-
-      <PasswordStrength password={newPassword} />
-
-      <Button
-        className="w-full"
-        onClick={onConfirm}
-        disabled={loading || !newPassword || !confirmPassword}>
-        {loading ? "กำลังดำเนินการ..." : submitLabel}
-      </Button>
-
-      {onCancel && <CancelLink onClick={onCancel} />}
-    </div>
-  );
-}
-
-function CancelLink({ onClick }: { onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="block mx-auto text-xs text-gray-600 underline hover:text-gray-900">
-      ยกเลิก
-    </button>
-  );
-}
-
-function PasswordStrength({ password }: { password: string }) {
-  const checks = PASSWORD_CHECKS.map((c) => ({
-    label: c.label,
-    ok: c.test(password),
-  }));
-  const score = checks.filter((c) => c.ok).length;
-  const total = checks.length;
-
-  function segColor(idx: number): string {
-    if (idx >= score) return "bg-gray-200";
-    if (score <= 2) return "bg-red-500";
-    if (score <= 3) return "bg-yellow-500";
-    if (score <= 4) return "bg-blue-500";
-    return "bg-green-500";
-  }
-
-  return (
-    <div className="space-y-1.5">
-      <div className="flex gap-1">
-        {Array.from({ length: total }).map((_, i) => (
-          <div
-            key={i}
-            className={`flex-1 h-1 rounded-full transition-colors ${segColor(i)}`}
-          />
-        ))}
-      </div>
-      <ul className="text-xs space-y-0.5">
-        {checks.map((c, i) => (
-          <li key={i} className={c.ok ? "text-green-600" : "text-gray-500"}>
-            <span className="inline-block w-3">{c.ok ? "✓" : "•"}</span>{" "}
-            {c.label}
-          </li>
-        ))}
-      </ul>
     </div>
   );
 }
