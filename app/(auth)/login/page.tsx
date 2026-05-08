@@ -17,6 +17,20 @@ import { authService } from "@/lib/api/services/auth.service";
 import { getAccessToken, setAccessToken } from "@/lib/api/client";
 import { registrationStorage } from "@/lib/api/auth-storage";
 
+type View = "login" | "register" | "forgot";
+
+const PASSWORD_CHECKS: { label: string; test: (p: string) => boolean }[] = [
+  { label: "อย่างน้อย 8 ตัวอักษร", test: (p) => p.length >= 8 },
+  { label: "มีตัวอักษรพิมพ์ใหญ่ (A–Z)", test: (p) => /[A-Z]/.test(p) },
+  { label: "มีตัวอักษรพิมพ์เล็ก (a–z)", test: (p) => /[a-z]/.test(p) },
+  { label: "มีตัวเลข (0–9)", test: (p) => /[0-9]/.test(p) },
+  { label: "มีอักขระพิเศษ (เช่น ! @ # $)", test: (p) => /[^A-Za-z0-9]/.test(p) },
+];
+
+function isPasswordStrong(p: string): boolean {
+  return PASSWORD_CHECKS.every((c) => c.test(p));
+}
+
 function getErrorMessage(err: unknown, fallback: string): string {
   const e = err as {
     response?: { data?: { message?: string } };
@@ -27,8 +41,27 @@ function getErrorMessage(err: unknown, fallback: string): string {
 
 export default function AuthPage() {
   const router = useRouter();
-  const [tab, setTab] = useState("login");
+  const [view, setView] = useState<View>("login");
   const [step, setStep] = useState(1);
+
+  // Login form
+  const [loginCode, setLoginCode] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [loginLoading, setLoginLoading] = useState(false);
+
+  // Step 1 fields (shared between Register and Forgot)
+  const [regCode, setRegCode] = useState("");
+  const [regPhone, setRegPhone] = useState("");
+  const [step1Loading, setStep1Loading] = useState(false);
+
+  // Step 2 (OTP)
+  const [otp, setOtp] = useState("");
+  const [otpLoading, setOtpLoading] = useState(false);
+
+  // Step 3 (password)
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [setPwLoading, setSetPwLoading] = useState(false);
 
   useEffect(() => {
     if (getAccessToken()) {
@@ -36,26 +69,7 @@ export default function AuthPage() {
     }
   }, [router]);
 
-  // Login
-  const [loginCode, setLoginCode] = useState("");
-  const [loginPassword, setLoginPassword] = useState("");
-  const [loginLoading, setLoginLoading] = useState(false);
-
-  // Register step 1
-  const [regCode, setRegCode] = useState("");
-  const [regPhone, setRegPhone] = useState("");
-  const [step1Loading, setStep1Loading] = useState(false);
-
-  // Register step 2 (OTP)
-  const [otp, setOtp] = useState("");
-  const [otpLoading, setOtpLoading] = useState(false);
-
-  // Register step 3 (password)
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [setPwLoading, setSetPwLoading] = useState(false);
-
-  function resetRegistrationState() {
+  function resetFlowState() {
     setRegCode("");
     setRegPhone("");
     setOtp("");
@@ -63,6 +77,11 @@ export default function AuthPage() {
     setConfirmPassword("");
     setStep(1);
     registrationStorage.clear();
+  }
+
+  function backToLogin() {
+    resetFlowState();
+    setView("login");
   }
 
   async function handleLogin(e: React.FormEvent) {
@@ -74,9 +93,6 @@ export default function AuthPage() {
         code: loginCode,
         password: loginPassword,
       });
-      // Save access token to both localStorage and a non-HttpOnly cookie.
-      // The server's Set-Cookie for refresh_token is stored automatically
-      // because the axios client sends withCredentials.
       setAccessToken(res.data.token);
       toast.success("เข้าสู่ระบบสำเร็จ");
       router.push("/dashboard");
@@ -87,7 +103,7 @@ export default function AuthPage() {
     }
   }
 
-  async function handleRegisterStep1() {
+  async function handleStep1() {
     if (!regCode || !regPhone) return;
     setStep1Loading(true);
     try {
@@ -111,7 +127,7 @@ export default function AuthPage() {
     const refCode = registrationStorage.getRefCode();
     if (!stage1Token || !refCode) {
       toast.error("ไม่พบข้อมูลการสมัคร กรุณาเริ่มใหม่");
-      resetRegistrationState();
+      resetFlowState();
       return;
     }
     setOtpLoading(true);
@@ -133,10 +149,14 @@ export default function AuthPage() {
       toast.error("รหัสผ่านไม่ตรงกัน");
       return;
     }
+    if (!isPasswordStrong(newPassword)) {
+      toast.error("รหัสผ่านไม่ผ่านมาตราฐานความปลอดภัย");
+      return;
+    }
     const stage2Token = registrationStorage.getStage2Token();
     if (!stage2Token) {
       toast.error("เซสชันหมดอายุ กรุณาเริ่มใหม่");
-      resetRegistrationState();
+      resetFlowState();
       return;
     }
     setSetPwLoading(true);
@@ -145,11 +165,12 @@ export default function AuthPage() {
         { newPassword, confirmPassword },
         stage2Token
       );
-      toast.success("สร้างผู้ใช้งานสำเร็จ");
-      resetRegistrationState();
-      setTab("login");
+      toast.success(
+        view === "forgot" ? "เปลี่ยนรหัสผ่านสำเร็จ" : "สร้างผู้ใช้งานสำเร็จ"
+      );
+      backToLogin();
     } catch (err) {
-      toast.error(getErrorMessage(err, "สร้างผู้ใช้งานไม่สำเร็จ"));
+      toast.error(getErrorMessage(err, "ดำเนินการไม่สำเร็จ"));
     } finally {
       setSetPwLoading(false);
     }
@@ -159,146 +180,353 @@ export default function AuthPage() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#153DA3] to-[#23E8AD] p-4">
       <Card className="w-full max-w-md rounded-2xl shadow-2xl bg-white backdrop-blur">
         <CardContent className="p-8">
-          <Tabs value={tab} onValueChange={setTab} className="w-full">
-            <TabsList className="grid grid-cols-2 mb-6 bg-muted p-1 rounded-lg">
-              <TabsTrigger value="login">Login</TabsTrigger>
-              <TabsTrigger value="register">Register</TabsTrigger>
-            </TabsList>
+          {/* LOGO HEADER */}
+          <div className="flex flex-col items-center gap-2 mb-6">
+            <div className="bg-white rounded-xl p-2 ring-1 ring-gray-200 shadow-sm">
+              <img
+                src="/gcap-logo.png"
+                alt="GCAP"
+                className="h-16 w-16 object-contain"
+              />
+            </div>
+            <div className="text-xs uppercase tracking-[0.2em] text-gray-500 font-medium">
+              statement
+            </div>
+          </div>
 
-            {/* ================= LOGIN ================= */}
-            <TabsContent value="login">
-              <form className="space-y-4" onSubmit={handleLogin}>
-                <div className="space-y-2">
-                  <Label>Code</Label>
-                  <Input
-                    type="text"
-                    autoComplete="username"
-                    value={loginCode}
-                    onChange={(e) => setLoginCode(e.target.value)}
-                    required
-                  />
-                </div>
+          {view === "forgot" ? (
+            <div>
+              <h2 className="text-base font-semibold text-center mb-4">
+                Forgot Password
+              </h2>
 
-                <div className="space-y-2">
-                  <Label>Password</Label>
-                  <Input
-                    type="password"
-                    autoComplete="current-password"
-                    value={loginPassword}
-                    onChange={(e) => setLoginPassword(e.target.value)}
-                    required
-                  />
-                </div>
-
-                <Button
-                  className="w-full"
-                  type="submit"
-                  disabled={loginLoading}>
-                  {loginLoading ? "กำลังเข้าสู่ระบบ..." : "Sign in"}
-                </Button>
-              </form>
-            </TabsContent>
-
-            {/* ================= REGISTER ================= */}
-            <TabsContent value="register">
-              {/* STEP 1: CODE + PHONE */}
               {step === 1 && (
-                <div className="space-y-4">
+                <Step1Form
+                  regCode={regCode}
+                  setRegCode={setRegCode}
+                  regPhone={regPhone}
+                  setRegPhone={setRegPhone}
+                  loading={step1Loading}
+                  onConfirm={handleStep1}
+                  onCancel={backToLogin}
+                />
+              )}
+              {step === 2 && (
+                <Step2Form
+                  otp={otp}
+                  setOtp={setOtp}
+                  loading={otpLoading}
+                  onConfirm={handleVerifyOtp}
+                  onCancel={backToLogin}
+                />
+              )}
+              {step === 3 && (
+                <Step3Form
+                  newPassword={newPassword}
+                  setNewPassword={setNewPassword}
+                  confirmPassword={confirmPassword}
+                  setConfirmPassword={setConfirmPassword}
+                  loading={setPwLoading}
+                  submitLabel="Change password"
+                  onConfirm={handleSetPassword}
+                  onCancel={backToLogin}
+                />
+              )}
+            </div>
+          ) : (
+            <Tabs
+              value={view}
+              onValueChange={(v) => {
+                setView(v as View);
+                setStep(1);
+              }}
+              className="w-full">
+              <TabsList className="grid grid-cols-2 mb-6 bg-muted p-1 rounded-lg">
+                <TabsTrigger value="login">Login</TabsTrigger>
+                <TabsTrigger value="register">Register</TabsTrigger>
+              </TabsList>
+
+              {/* ================= LOGIN ================= */}
+              <TabsContent value="login">
+                <form className="space-y-4" onSubmit={handleLogin}>
                   <div className="space-y-2">
                     <Label>Code</Label>
                     <Input
                       type="text"
-                      placeholder="Enter your code"
-                      value={regCode}
-                      onChange={(e) => setRegCode(e.target.value)}
+                      autoComplete="username"
+                      value={loginCode}
+                      onChange={(e) => setLoginCode(e.target.value)}
+                      required
                     />
                   </div>
 
-                  <div className="space-y-2">
-                    <Label>Phone Number</Label>
-                    <Input
-                      type="tel"
-                      placeholder="08xxxxxxxx"
-                      value={regPhone}
-                      onChange={(e) => setRegPhone(e.target.value)}
-                    />
-                  </div>
-
-                  <Button
-                    className="w-full"
-                    onClick={handleRegisterStep1}
-                    disabled={step1Loading || !regCode || !regPhone}>
-                    {step1Loading ? "กำลังส่ง..." : "Confirm"}
-                  </Button>
-                </div>
-              )}
-
-              {/* STEP 2: OTP */}
-              {step === 2 && (
-                <div className="space-y-4">
-                  <div className="text-sm text-gray-600 text-center">
-                    A One-Time Password (OTP) has been sent to your registered
-                    phone number. Please enter the 6-digit code below to verify
-                    your identity. The code will expire shortly.
-                  </div>
-
-                  <div className="flex justify-center">
-                    <InputOTP maxLength={6} value={otp} onChange={setOtp}>
-                      <InputOTPGroup>
-                        <InputOTPSlot index={0} />
-                        <InputOTPSlot index={1} />
-                        <InputOTPSlot index={2} />
-                        <InputOTPSlot index={3} />
-                        <InputOTPSlot index={4} />
-                        <InputOTPSlot index={5} />
-                      </InputOTPGroup>
-                    </InputOTP>
-                  </div>
-
-                  <Button
-                    className="w-full"
-                    onClick={handleVerifyOtp}
-                    disabled={otpLoading || otp.length < 6}>
-                    {otpLoading ? "กำลังตรวจสอบ..." : "Confirm"}
-                  </Button>
-                </div>
-              )}
-
-              {/* STEP 3: PASSWORD */}
-              {step === 3 && (
-                <div className="space-y-4">
                   <div className="space-y-2">
                     <Label>Password</Label>
                     <Input
                       type="password"
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Confirm Password</Label>
-                    <Input
-                      type="password"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      autoComplete="current-password"
+                      value={loginPassword}
+                      onChange={(e) => setLoginPassword(e.target.value)}
+                      required
                     />
                   </div>
 
                   <Button
                     className="w-full"
-                    onClick={handleSetPassword}
-                    disabled={
-                      setPwLoading || !newPassword || !confirmPassword
-                    }>
-                    {setPwLoading ? "กำลังสร้างบัญชี..." : "Create account"}
+                    type="submit"
+                    disabled={loginLoading}>
+                    {loginLoading ? "กำลังเข้าสู่ระบบ..." : "Sign in"}
                   </Button>
-                </div>
-              )}
-            </TabsContent>
-          </Tabs>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setView("forgot");
+                      setStep(1);
+                    }}
+                    className="block mx-auto text-xs text-gray-600 underline hover:text-gray-900 mt-2">
+                    Forgot Password
+                  </button>
+                </form>
+              </TabsContent>
+
+              {/* ================= REGISTER ================= */}
+              <TabsContent value="register">
+                {step === 1 && (
+                  <Step1Form
+                    regCode={regCode}
+                    setRegCode={setRegCode}
+                    regPhone={regPhone}
+                    setRegPhone={setRegPhone}
+                    loading={step1Loading}
+                    onConfirm={handleStep1}
+                  />
+                )}
+                {step === 2 && (
+                  <Step2Form
+                    otp={otp}
+                    setOtp={setOtp}
+                    loading={otpLoading}
+                    onConfirm={handleVerifyOtp}
+                  />
+                )}
+                {step === 3 && (
+                  <Step3Form
+                    newPassword={newPassword}
+                    setNewPassword={setNewPassword}
+                    confirmPassword={confirmPassword}
+                    setConfirmPassword={setConfirmPassword}
+                    loading={setPwLoading}
+                    submitLabel="Create account"
+                    onConfirm={handleSetPassword}
+                  />
+                )}
+              </TabsContent>
+            </Tabs>
+          )}
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+// ----- step components -----
+
+type Step1Props = {
+  regCode: string;
+  setRegCode: (v: string) => void;
+  regPhone: string;
+  setRegPhone: (v: string) => void;
+  loading: boolean;
+  onConfirm: () => void;
+  onCancel?: () => void;
+};
+
+function Step1Form({
+  regCode,
+  setRegCode,
+  regPhone,
+  setRegPhone,
+  loading,
+  onConfirm,
+  onCancel,
+}: Step1Props) {
+  return (
+    <div className="space-y-4">
+      <div className="space-y-2">
+        <Label>Code</Label>
+        <Input
+          type="text"
+          placeholder="Enter your code"
+          value={regCode}
+          onChange={(e) => setRegCode(e.target.value)}
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label>Phone Number</Label>
+        <Input
+          type="tel"
+          placeholder="08xxxxxxxx"
+          value={regPhone}
+          onChange={(e) => setRegPhone(e.target.value)}
+        />
+      </div>
+
+      <Button
+        className="w-full"
+        onClick={onConfirm}
+        disabled={loading || !regCode || !regPhone}>
+        {loading ? "กำลังส่ง..." : "Confirm"}
+      </Button>
+
+      {onCancel && <CancelLink onClick={onCancel} />}
+    </div>
+  );
+}
+
+type Step2Props = {
+  otp: string;
+  setOtp: (v: string) => void;
+  loading: boolean;
+  onConfirm: () => void;
+  onCancel?: () => void;
+};
+
+function Step2Form({ otp, setOtp, loading, onConfirm, onCancel }: Step2Props) {
+  return (
+    <div className="space-y-4">
+      <div className="text-sm text-gray-600 text-center">
+        A One-Time Password (OTP) has been sent to your registered phone
+        number. Please enter the 6-digit code below to verify your identity.
+        The code will expire shortly.
+      </div>
+
+      <div className="flex justify-center">
+        <InputOTP maxLength={6} value={otp} onChange={setOtp}>
+          <InputOTPGroup>
+            <InputOTPSlot index={0} />
+            <InputOTPSlot index={1} />
+            <InputOTPSlot index={2} />
+            <InputOTPSlot index={3} />
+            <InputOTPSlot index={4} />
+            <InputOTPSlot index={5} />
+          </InputOTPGroup>
+        </InputOTP>
+      </div>
+
+      <Button
+        className="w-full"
+        onClick={onConfirm}
+        disabled={loading || otp.length < 6}>
+        {loading ? "กำลังตรวจสอบ..." : "Confirm"}
+      </Button>
+
+      {onCancel && <CancelLink onClick={onCancel} />}
+    </div>
+  );
+}
+
+type Step3Props = {
+  newPassword: string;
+  setNewPassword: (v: string) => void;
+  confirmPassword: string;
+  setConfirmPassword: (v: string) => void;
+  loading: boolean;
+  submitLabel: string;
+  onConfirm: () => void;
+  onCancel?: () => void;
+};
+
+function Step3Form({
+  newPassword,
+  setNewPassword,
+  confirmPassword,
+  setConfirmPassword,
+  loading,
+  submitLabel,
+  onConfirm,
+  onCancel,
+}: Step3Props) {
+  return (
+    <div className="space-y-4">
+      <div className="space-y-2">
+        <Label>Password</Label>
+        <Input
+          type="password"
+          value={newPassword}
+          onChange={(e) => setNewPassword(e.target.value)}
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label>Confirm Password</Label>
+        <Input
+          type="password"
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+        />
+      </div>
+
+      <PasswordStrength password={newPassword} />
+
+      <Button
+        className="w-full"
+        onClick={onConfirm}
+        disabled={loading || !newPassword || !confirmPassword}>
+        {loading ? "กำลังดำเนินการ..." : submitLabel}
+      </Button>
+
+      {onCancel && <CancelLink onClick={onCancel} />}
+    </div>
+  );
+}
+
+function CancelLink({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="block mx-auto text-xs text-gray-600 underline hover:text-gray-900">
+      ยกเลิก
+    </button>
+  );
+}
+
+function PasswordStrength({ password }: { password: string }) {
+  const checks = PASSWORD_CHECKS.map((c) => ({
+    label: c.label,
+    ok: c.test(password),
+  }));
+  const score = checks.filter((c) => c.ok).length;
+  const total = checks.length;
+
+  function segColor(idx: number): string {
+    if (idx >= score) return "bg-gray-200";
+    if (score <= 2) return "bg-red-500";
+    if (score <= 3) return "bg-yellow-500";
+    if (score <= 4) return "bg-blue-500";
+    return "bg-green-500";
+  }
+
+  return (
+    <div className="space-y-1.5">
+      <div className="flex gap-1">
+        {Array.from({ length: total }).map((_, i) => (
+          <div
+            key={i}
+            className={`flex-1 h-1 rounded-full transition-colors ${segColor(i)}`}
+          />
+        ))}
+      </div>
+      <ul className="text-xs space-y-0.5">
+        {checks.map((c, i) => (
+          <li key={i} className={c.ok ? "text-green-600" : "text-gray-500"}>
+            <span className="inline-block w-3">{c.ok ? "✓" : "•"}</span>{" "}
+            {c.label}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
