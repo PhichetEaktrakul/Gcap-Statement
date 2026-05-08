@@ -4,9 +4,11 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { authService } from "@/lib/api/services/auth.service";
+import { customerService } from "@/lib/api/services/customer.service";
 import { registrationStorage } from "@/lib/api/auth-storage";
-import { Step1Form, Step2Form, Step3Form } from "@/components/auth-steps";
+import { Step2Form, Step3Form, CancelLink } from "@/components/auth-steps";
 import { isPasswordStrong } from "@/components/password-strength";
 
 function getErrorMessage(err: unknown, fallback: string): string {
@@ -21,8 +23,6 @@ export default function ChangePasswordPage() {
   const router = useRouter();
   const [step, setStep] = useState(1);
 
-  const [regCode, setRegCode] = useState("");
-  const [regPhone, setRegPhone] = useState("");
   const [step1Loading, setStep1Loading] = useState(false);
 
   const [otp, setOtp] = useState("");
@@ -37,13 +37,19 @@ export default function ChangePasswordPage() {
     router.push("/dashboard");
   }
 
-  async function handleStep1() {
-    if (!regCode || !regPhone) return;
+  async function handleStartChange() {
     setStep1Loading(true);
     try {
+      const profile = await customerService.getProfile();
+      const code = profile.data.customerCode;
+      const phone = profile.data.mobileNumber;
+      if (!code || !phone) {
+        toast.error("ไม่พบข้อมูลลูกค้า ไม่สามารถเปลี่ยนรหัสผ่านได้");
+        return;
+      }
       const res = await authService.forgotPassword({
-        code: regCode,
-        phoneNumber: regPhone,
+        code,
+        phoneNumber: phone,
       });
       registrationStorage.setStage1Token(res.data.stage1Token);
       registrationStorage.setRefCode(res.data.refCode);
@@ -110,47 +116,54 @@ export default function ChangePasswordPage() {
   }
 
   return (
-    <div className="p-4 md:p-6 flex items-start justify-center">
-      <Card className="w-full max-w-md rounded-2xl shadow-sm">
-        <CardContent className="p-6 md:p-8">
-          <h1 className="text-base md:text-lg font-semibold text-center mb-6">
-            เปลี่ยนรหัสผ่าน
-          </h1>
+    <div className="p-4 md:p-6 space-y-4 md:space-y-6">
+      <h1 className="text-lg md:text-xl font-semibold">เปลี่ยนรหัสผ่าน</h1>
 
-          {step === 1 && (
-            <Step1Form
-              regCode={regCode}
-              setRegCode={setRegCode}
-              regPhone={regPhone}
-              setRegPhone={setRegPhone}
-              loading={step1Loading}
-              onConfirm={handleStep1}
-              onCancel={handleCancel}
-            />
-          )}
-          {step === 2 && (
-            <Step2Form
-              otp={otp}
-              setOtp={setOtp}
-              loading={otpLoading}
-              onConfirm={handleVerifyOtp}
-              onCancel={handleCancel}
-            />
-          )}
-          {step === 3 && (
-            <Step3Form
-              newPassword={newPassword}
-              setNewPassword={setNewPassword}
-              confirmPassword={confirmPassword}
-              setConfirmPassword={setConfirmPassword}
-              loading={setPwLoading}
-              submitLabel="Change password"
-              onConfirm={handleSetPassword}
-              onCancel={handleCancel}
-            />
-          )}
-        </CardContent>
-      </Card>
+      <div className="flex justify-center">
+        <Card className="w-full max-w-md rounded-2xl shadow-sm">
+          <CardContent className="p-6 md:p-8">
+            {step === 1 && (
+              <div className="space-y-6">
+                <div className="text-base text-center font-medium">
+                  ต้องการเปลี่ยนรหัสผ่านหรือไม่?
+                </div>
+                <div className="space-y-3">
+                  <Button
+                    className="w-full"
+                    onClick={handleStartChange}
+                    disabled={step1Loading}>
+                    {step1Loading ? "กำลังส่ง..." : "Confirm"}
+                  </Button>
+                  <CancelLink onClick={handleCancel} />
+                </div>
+              </div>
+            )}
+
+            {step === 2 && (
+              <Step2Form
+                otp={otp}
+                setOtp={setOtp}
+                loading={otpLoading}
+                onConfirm={handleVerifyOtp}
+                onCancel={handleCancel}
+              />
+            )}
+
+            {step === 3 && (
+              <Step3Form
+                newPassword={newPassword}
+                setNewPassword={setNewPassword}
+                confirmPassword={confirmPassword}
+                setConfirmPassword={setConfirmPassword}
+                loading={setPwLoading}
+                submitLabel="Change password"
+                onConfirm={handleSetPassword}
+                onCancel={handleCancel}
+              />
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

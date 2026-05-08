@@ -55,6 +55,15 @@ type GoldPrices = {
   gold96_sell: number;
 };
 
+function fmtDate(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "—";
+  const yy = String((d.getFullYear() + 543) % 100).padStart(2, "0");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${dd}/${mm}/${yy}`;
+}
+
 function fmtDateTime(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "—";
@@ -66,15 +75,6 @@ function fmtDateTime(iso: string): string {
   return `${dd}/${mm}/${yy} ${hh}:${mi}`;
 }
 
-function fmtDate(iso: string): string {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
-  const yy = String((d.getFullYear() + 543) % 100).padStart(2, "0");
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  return `${dd}/${mm}/${yy}`;
-}
-
 function fmtNumber(n: number): string {
   return n.toLocaleString("en-US", {
     minimumFractionDigits: 0,
@@ -82,15 +82,11 @@ function fmtNumber(n: number): string {
   });
 }
 
-// Plain signed: shows the natural minus sign for negatives, no leading + for
-// positives. Used for QTY / Total stat cards.
 function fmtPlainSigned(n: number): string {
   if (n < 0) return `-${fmtNumber(Math.abs(n))}`;
   return fmtNumber(n);
 }
 
-// Signed with explicit + prefix and color cue. Used for Unrealize values
-// (per-row column and the aggregate stat card).
 function fmtSignedColored(n: number): { text: string; cls: string } {
   if (n > 0) return { text: `+${fmtNumber(n)}`, cls: "text-green-600" };
   if (n < 0) return { text: `-${fmtNumber(Math.abs(n))}`, cls: "text-red-500" };
@@ -109,8 +105,6 @@ function getDueDate(item: ActiveTicketItem): string {
   return item.dueDate ?? item.createDate;
 }
 
-// Per-ticket Unrealize using current spot prices. Returns null when prices
-// are not yet loaded or the asset is unknown.
 function unrealizeOf(
   item: ActiveTicketItem,
   prices: GoldPrices | null
@@ -127,8 +121,6 @@ function unrealizeOf(
   }
   if (spot === undefined) return null;
 
-  // ขาย (sell): totalPrice − spotSell × qty
-  // ซื้อ (buy):  spotBuy × qty − totalPrice
   return item.command === 1 ? totalAbs - spot * qtyAbs : spot * qtyAbs - totalAbs;
 }
 
@@ -142,6 +134,10 @@ export default function PortfolioPage() {
   const [page96, setPage96] = useState(1);
   const [page99, setPage99] = useState(1);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  // Stats are computed from this snapshot, refreshed only when คำนวน is pressed.
+  const [committedSelection, setCommittedSelection] = useState<Set<string>>(
+    new Set()
+  );
   const [drawerItem, setDrawerItem] = useState<ActiveTicketItem | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
@@ -227,10 +223,73 @@ export default function PortfolioPage() {
     page99 * PAGE_SIZE
   );
 
+  // Compute stats from the committedSelection snapshot.
+  const stats = useMemo(() => {
+    const sumSigned = (rows: ActiveTicketItem[], pick: (i: ActiveTicketItem) => number) => {
+      let s = 0;
+      for (const item of rows) {
+        const sign = item.command === 1 ? -1 : 1;
+        s += sign * Math.abs(pick(item));
+      }
+      return s;
+    };
+
+    const checked96 = items96.filter((i) =>
+      committedSelection.has(i.ticketCode)
+    );
+    const checked99 = items99.filter((i) =>
+      committedSelection.has(i.ticketCode)
+    );
+    const allChecked = [...checked96, ...checked99];
+    const allUnchecked = [...items96, ...items99].filter(
+      (i) => !committedSelection.has(i.ticketCode)
+    );
+
+    const qty96 =
+      checked96.length === 0
+        ? "--"
+        : fmtPlainSigned(sumSigned(checked96, (i) => i.quantity));
+    const qty99 =
+      checked99.length === 0
+        ? "--"
+        : fmtPlainSigned(sumSigned(checked99, (i) => i.quantity));
+
+    const totalText =
+      allChecked.length === 0
+        ? "--"
+        : fmtPlainSigned(sumSigned(allChecked, (i) => i.totalPrice));
+
+    let unrText = "--";
+    let unrCls = "";
+    if (allUnchecked.length > 0 && goldPrices) {
+      let sum = 0;
+      let ok = true;
+      for (const item of allUnchecked) {
+        const u = unrealizeOf(item, goldPrices);
+        if (u === null) {
+          ok = false;
+          break;
+        }
+        sum += u;
+      }
+      if (ok) {
+        const f = fmtSignedColored(sum);
+        unrText = f.text;
+        unrCls = f.cls;
+      }
+    }
+
+    return { qty96, qty99, totalText, unrText, unrCls };
+  }, [items96, items99, committedSelection, goldPrices]);
+
   function handleSearch() {
     setPage96(1);
     setPage99(1);
     setAppliedFilters(filters);
+  }
+
+  function handleCalculate() {
+    setCommittedSelection(new Set(selectedIds));
   }
 
   function toggleSelect(id: string) {
@@ -313,10 +372,32 @@ export default function PortfolioPage() {
           </CardContent>
         </Card>
 
+        {/* CALCULATE CARD */}
+        <Card className="rounded-xl">
+          <CardContent>
+            <div className="flex flex-col lg:flex-row lg:items-center gap-3 lg:gap-4 lg:justify-between">
+              <div className="flex flex-wrap gap-2">
+                <StatCard label="QTY 96.50" value={stats.qty96} />
+                <StatCard label="QTY 99.99" value={stats.qty99} />
+                <StatCard label="Total" value={stats.totalText} />
+                <StatCard
+                  label="Unrealize P/L"
+                  value={stats.unrText}
+                  valueClass={stats.unrCls}
+                />
+              </div>
+              <Button
+                className="bg-blue-600 hover:bg-blue-700 w-full lg:w-auto"
+                onClick={handleCalculate}>
+                คำนวน
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* TICKET 96.50% */}
         <TicketSection
           title="Ticket 96.50%"
-          qtyLabel="QTY 96.50"
           loading={loading}
           allItems={items96}
           pageItems={pageItems96}
@@ -333,7 +414,6 @@ export default function PortfolioPage() {
         {/* TICKET 99.99% */}
         <TicketSection
           title="Ticket 99.99%"
-          qtyLabel="QTY 99.99"
           loading={loading}
           allItems={items99}
           pageItems={pageItems99}
@@ -368,7 +448,7 @@ function StatCard({
   valueClass?: string;
 }) {
   return (
-    <div className="bg-gray-50 rounded-lg px-3 py-2 min-w-[110px]">
+    <div className="bg-gray-50 rounded-lg px-3 py-2 min-w-[120px]">
       <div className="text-[11px] text-gray-500 leading-tight">{label}</div>
       <div className={`font-semibold text-sm mt-0.5 ${valueClass}`}>
         {value}
@@ -379,7 +459,6 @@ function StatCard({
 
 function TicketSection({
   title,
-  qtyLabel,
   loading,
   allItems,
   pageItems,
@@ -393,7 +472,6 @@ function TicketSection({
   onOpen,
 }: {
   title: string;
-  qtyLabel: string;
   loading: boolean;
   allItems: ActiveTicketItem[];
   pageItems: ActiveTicketItem[];
@@ -412,167 +490,121 @@ function TicketSection({
     pageItems.length > 0 &&
     pageItems.every((i) => selectedIds.has(i.ticketCode));
 
-  // QTY / Total: based on rows that ARE checked.
-  const checked = allItems.filter((i) => selectedIds.has(i.ticketCode));
-  let qtyText = "--";
-  let totalText = "--";
-  if (checked.length > 0) {
-    let qSum = 0;
-    let tSum = 0;
-    for (const item of checked) {
-      const sign = item.command === 1 ? -1 : 1; // ขาย = negative, ซื้อ = positive
-      qSum += sign * Math.abs(item.quantity);
-      tSum += sign * Math.abs(item.totalPrice);
-    }
-    qtyText = fmtPlainSigned(qSum);
-    totalText = fmtPlainSigned(tSum);
-  }
-
-  // Unrealize P/L: sum of unrealize for rows that are NOT checked.
-  // "--" when every row is checked or prices haven't loaded.
-  const unchecked = allItems.filter((i) => !selectedIds.has(i.ticketCode));
-  let unrText = "--";
-  let unrCls = "";
-  if (unchecked.length > 0 && goldPrices) {
-    let sum = 0;
-    let ok = true;
-    for (const item of unchecked) {
-      const u = unrealizeOf(item, goldPrices);
-      if (u === null) {
-        ok = false;
-        break;
-      }
-      sum += u;
-    }
-    if (ok) {
-      const f = fmtSignedColored(sum);
-      unrText = f.text;
-      unrCls = f.cls;
-    }
-  }
-
   return (
     <Card className="rounded-xl">
-      {/* HEADER WITH STATS */}
-      <div className="flex flex-col gap-3 lg:flex-row lg:justify-between lg:items-center px-4 md:px-5">
+      {/* HEADER */}
+      <div className="px-4 md:px-5">
         <h2 className="text-base md:text-lg font-semibold">{title}</h2>
-        <div className="flex flex-wrap gap-2 items-center">
-          <StatCard label={qtyLabel} value={qtyText} />
-          <StatCard label="Total" value={totalText} />
-          <StatCard label="Unrealize P/L" value={unrText} valueClass={unrCls} />
-          <Button className="bg-blue-600 hover:bg-blue-700" size="sm">
-            คำนวน
-          </Button>
-        </div>
       </div>
 
       {/* TABLE */}
       <div className="px-4 md:px-5">
         <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-10 pl-4 md:pl-5">
-              <input
-                type="checkbox"
-                className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                checked={allOnPageSelected}
-                onChange={onSelectAllOnPage}
-                aria-label="Select all rows on this page"
-              />
-            </TableHead>
-            <TableHead>วันที่/เวลา</TableHead>
-            <TableHead>BY</TableHead>
-            <TableHead>คำสั่ง</TableHead>
-            <TableHead className="text-right">จำนวน</TableHead>
-            <TableHead className="text-right">ราคา</TableHead>
-            <TableHead className="text-right">TOTAL</TableHead>
-            <TableHead className="text-right">UNREALIZE</TableHead>
-            <TableHead>วันครบดีล</TableHead>
-          </TableRow>
-        </TableHeader>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-10">
+                <input
+                  type="checkbox"
+                  className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                  checked={allOnPageSelected}
+                  onChange={onSelectAllOnPage}
+                  aria-label="Select all rows on this page"
+                />
+              </TableHead>
+              <TableHead>วันที่/เวลา</TableHead>
+              <TableHead>BY</TableHead>
+              <TableHead>คำสั่ง</TableHead>
+              <TableHead className="text-right">จำนวน</TableHead>
+              <TableHead className="text-right">ราคา</TableHead>
+              <TableHead className="text-right">TOTAL</TableHead>
+              <TableHead className="text-right">UNREALIZE</TableHead>
+              <TableHead>วันครบดีล</TableHead>
+            </TableRow>
+          </TableHeader>
 
-        <TableBody>
-          {loading && (
-            <TableRow>
-              <TableCell
-                colSpan={9}
-                className="text-center py-6 text-gray-500">
-                กำลังโหลด...
-              </TableCell>
-            </TableRow>
-          )}
-          {!loading && pageItems.length === 0 && (
-            <TableRow>
-              <TableCell colSpan={9} className="py-10">
-                <div className="flex flex-col items-center gap-2 text-gray-400">
-                  <Inbox className="w-10 h-10" strokeWidth={1.5} />
-                  <span className="text-sm">ไม่พบรายการ</span>
-                </div>
-              </TableCell>
-            </TableRow>
-          )}
-          {!loading &&
-            pageItems.map((item) => {
-              const isSelected = selectedIds.has(item.ticketCode);
-              const u = unrealizeOf(item, goldPrices);
-              const uFormatted =
-                u === null ? { text: "—", cls: "" } : fmtSignedColored(u);
-              return (
-                <TableRow
-                  key={item.ticketCode}
-                  className="cursor-pointer hover:bg-gray-50 transition"
-                  onClick={() => onOpen(item)}>
-                  <TableCell className="pl-4 md:pl-5">
-                    <input
-                      type="checkbox"
-                      className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                      checked={isSelected}
-                      onClick={(e) => e.stopPropagation()}
-                      onChange={() => onToggleSelect(item.ticketCode)}
-                      aria-label={`Select ${item.ticketCode}`}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <DateTimeCell iso={item.createDate} />
-                  </TableCell>
-                  <TableCell>
-                    <span
-                      className={`px-2 py-1 text-xs rounded-full ${
-                        item.ticketType === "C"
-                          ? "bg-blue-100 text-blue-500"
-                          : "bg-green-100 text-green-600"
-                      }`}>
-                      {item.ticketType}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <span
-                      className={`px-2 py-1 text-xs rounded-full ${
-                        item.command === 2
-                          ? "bg-green-100 text-green-600"
-                          : "bg-red-100 text-red-500"
-                      }`}>
-                      {commandLabel(item.command)}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums">
-                    {fmtNumber(Math.abs(item.quantity))}
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums">
-                    {fmtNumber(item.pricePerUnit)}
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums">
-                    {fmtNumber(Math.abs(item.totalPrice))}
-                  </TableCell>
-                  <TableCell className={`text-right tabular-nums ${uFormatted.cls}`}>
-                    {uFormatted.text}
-                  </TableCell>
-                  <TableCell>{fmtDate(getDueDate(item))}</TableCell>
-                </TableRow>
-              );
-            })}
-        </TableBody>
-      </Table>
+          <TableBody>
+            {loading && (
+              <TableRow>
+                <TableCell
+                  colSpan={9}
+                  className="text-center py-6 text-gray-500">
+                  กำลังโหลด...
+                </TableCell>
+              </TableRow>
+            )}
+            {!loading && pageItems.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={9} className="py-10">
+                  <div className="flex flex-col items-center gap-2 text-gray-400">
+                    <Inbox className="w-10 h-10" strokeWidth={1.5} />
+                    <span className="text-sm">ไม่พบรายการ</span>
+                  </div>
+                </TableCell>
+              </TableRow>
+            )}
+            {!loading &&
+              pageItems.map((item) => {
+                const isSelected = selectedIds.has(item.ticketCode);
+                const u = unrealizeOf(item, goldPrices);
+                const uFormatted =
+                  u === null ? { text: "—", cls: "" } : fmtSignedColored(u);
+                return (
+                  <TableRow
+                    key={item.ticketCode}
+                    className="cursor-pointer hover:bg-gray-50 transition"
+                    onClick={() => onOpen(item)}>
+                    <TableCell>
+                      <input
+                        type="checkbox"
+                        className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                        checked={isSelected}
+                        onClick={(e) => e.stopPropagation()}
+                        onChange={() => onToggleSelect(item.ticketCode)}
+                        aria-label={`Select ${item.ticketCode}`}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <DateTimeCell iso={item.createDate} />
+                    </TableCell>
+                    <TableCell>
+                      <span
+                        className={`px-2 py-1 text-xs rounded-full ${
+                          item.ticketType === "C"
+                            ? "bg-blue-100 text-blue-500"
+                            : "bg-green-100 text-green-600"
+                        }`}>
+                        {item.ticketType}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <span
+                        className={`px-2 py-1 text-xs rounded-full ${
+                          item.command === 2
+                            ? "bg-green-100 text-green-600"
+                            : "bg-red-100 text-red-500"
+                        }`}>
+                        {commandLabel(item.command)}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {fmtNumber(Math.abs(item.quantity))}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {fmtNumber(item.pricePerUnit)}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {fmtNumber(Math.abs(item.totalPrice))}
+                    </TableCell>
+                    <TableCell
+                      className={`text-right tabular-nums ${uFormatted.cls}`}>
+                      {uFormatted.text}
+                    </TableCell>
+                    <TableCell>{fmtDate(getDueDate(item))}</TableCell>
+                  </TableRow>
+                );
+              })}
+          </TableBody>
+        </Table>
       </div>
 
       {/* PAGINATION */}
