@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import {
   InputOTP,
@@ -9,6 +11,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import PasswordStrength from "@/components/password-strength";
+import {
+  authService,
+  type ValidatePasswordData,
+} from "@/lib/api/services/auth.service";
 
 export function CancelLink({
   onClick,
@@ -60,9 +66,11 @@ export function Step1Form({
         <Label>Phone Number</Label>
         <Input
           type="tel"
+          inputMode="numeric"
+          pattern="[0-9]*"
           placeholder="08xxxxxxxx"
           value={regPhone}
-          onChange={(e) => setRegPhone(e.target.value)}
+          onChange={(e) => setRegPhone(e.target.value.replace(/\D/g, ""))}
         />
       </div>
 
@@ -125,6 +133,7 @@ export function Step2Form({
 }
 
 export function Step3Form({
+  code,
   newPassword,
   setNewPassword,
   confirmPassword,
@@ -134,6 +143,7 @@ export function Step3Form({
   onConfirm,
   onCancel,
 }: {
+  code: string;
   newPassword: string;
   setNewPassword: (v: string) => void;
   confirmPassword: string;
@@ -143,6 +153,67 @@ export function Step3Form({
   onConfirm: () => void;
   onCancel?: () => void;
 }) {
+  const [validating, setValidating] = useState(false);
+  const [result, setResult] = useState<ValidatePasswordData | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Run /auth/validate-password 2 seconds after the user stops typing.
+  useEffect(() => {
+    if (!newPassword) {
+      setResult(null);
+      setValidating(false);
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      return;
+    }
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    setValidating(true);
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const res = await authService.validatePassword({
+          code,
+          password: newPassword,
+        });
+        setResult(res.data);
+      } catch {
+        setResult(null);
+      } finally {
+        setValidating(false);
+      }
+    }, 2000);
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [newPassword, code]);
+
+  async function handleSubmit() {
+    if (!newPassword || !confirmPassword) return;
+    if (newPassword !== confirmPassword) {
+      toast.error("รหัสผ่านไม่ตรงกัน");
+      return;
+    }
+
+    // If the user pressed confirm before the debounce fired, run validation
+    // now to guarantee a fresh result, then act on it.
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    setValidating(true);
+    try {
+      const res = await authService.validatePassword({
+        code,
+        password: newPassword,
+      });
+      setResult(res.data);
+      if (!res.data.isValid || res.data.errors.length > 0) {
+        toast.error("รหัสผ่านไม่ผ่านมาตราฐานความปลอดภัย");
+        return;
+      }
+      onConfirm();
+    } catch {
+      toast.error("ไม่สามารถตรวจสอบรหัสผ่านได้");
+    } finally {
+      setValidating(false);
+    }
+  }
+
   return (
     <div className="space-y-4">
       <div className="space-y-2">
@@ -163,12 +234,19 @@ export function Step3Form({
         />
       </div>
 
-      <PasswordStrength password={newPassword} />
+      <PasswordStrength
+        score={result?.score ?? null}
+        errors={result?.errors ?? null}
+        isValid={result?.isValid ?? null}
+        loading={validating}
+      />
 
       <Button
         className="w-full"
-        onClick={onConfirm}
-        disabled={loading || !newPassword || !confirmPassword}>
+        onClick={handleSubmit}
+        disabled={
+          loading || validating || !newPassword || !confirmPassword
+        }>
         {loading ? "กำลังดำเนินการ..." : submitLabel}
       </Button>
 

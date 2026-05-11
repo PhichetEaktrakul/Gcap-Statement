@@ -4,6 +4,7 @@ export const ENDPOINTS = {
     forgotPassword: "/auth/forgot-password",
     verifyOtp: "/auth/verify-otp",
     setPassword: "/auth/set-password",
+    validatePassword: "/auth/validate-password",
     refresh: "/auth/refresh",
     logout: "/auth/logout",
     me: "/auth/me",

@@ -9,7 +9,6 @@ import { authService } from "@/lib/api/services/auth.service";
 import { customerService } from "@/lib/api/services/customer.service";
 import { registrationStorage } from "@/lib/api/auth-storage";
 import { Step2Form, Step3Form, CancelLink } from "@/components/auth-steps";
-import { isPasswordStrong } from "@/components/password-strength";
 
 function getErrorMessage(err: unknown, fallback: string): string {
   const e = err as {
@@ -22,6 +21,7 @@ function getErrorMessage(err: unknown, fallback: string): string {
 export default function ChangePasswordPage() {
   const router = useRouter();
   const [step, setStep] = useState(1);
+  const [customerCode, setCustomerCode] = useState("");
 
   const [step1Loading, setStep1Loading] = useState(false);
 
@@ -47,6 +47,7 @@ export default function ChangePasswordPage() {
         toast.error("ไม่พบข้อมูลลูกค้า ไม่สามารถเปลี่ยนรหัสผ่านได้");
         return;
       }
+      setCustomerCode(code);
       const res = await authService.forgotPassword({
         code,
         phoneNumber: phone,
@@ -85,14 +86,6 @@ export default function ChangePasswordPage() {
 
   async function handleSetPassword() {
     if (!newPassword || !confirmPassword) return;
-    if (newPassword !== confirmPassword) {
-      toast.error("รหัสผ่านไม่ตรงกัน");
-      return;
-    }
-    if (!isPasswordStrong(newPassword)) {
-      toast.error("รหัสผ่านไม่ผ่านมาตราฐานความปลอดภัย");
-      return;
-    }
     const stage2Token = registrationStorage.getStage2Token();
     if (!stage2Token) {
       toast.error("เซสชันหมดอายุ กรุณาเริ่มใหม่");
@@ -151,6 +144,7 @@ export default function ChangePasswordPage() {
 
             {step === 3 && (
               <Step3Form
+                code={customerCode}
                 newPassword={newPassword}
                 setNewPassword={setNewPassword}
                 confirmPassword={confirmPassword}

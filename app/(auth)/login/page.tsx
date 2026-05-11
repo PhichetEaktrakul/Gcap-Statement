@@ -12,7 +12,6 @@ import { authService } from "@/lib/api/services/auth.service";
 import { getAccessToken, setAccessToken } from "@/lib/api/client";
 import { registrationStorage } from "@/lib/api/auth-storage";
 import { Step1Form, Step2Form, Step3Form } from "@/components/auth-steps";
-import { isPasswordStrong } from "@/components/password-strength";
 
 type View = "login" | "register" | "forgot";
 
@@ -126,14 +125,6 @@ export default function AuthPage() {
 
   async function handleSetPassword() {
     if (!newPassword || !confirmPassword) return;
-    if (newPassword !== confirmPassword) {
-      toast.error("รหัสผ่านไม่ตรงกัน");
-      return;
-    }
-    if (!isPasswordStrong(newPassword)) {
-      toast.error("รหัสผ่านไม่ผ่านมาตราฐานความปลอดภัย");
-      return;
-    }
     const stage2Token = registrationStorage.getStage2Token();
     if (!stage2Token) {
       toast.error("เซสชันหมดอายุ กรุณาเริ่มใหม่");
@@ -203,6 +194,7 @@ export default function AuthPage() {
               )}
               {step === 3 && (
                 <Step3Form
+                  code={regCode}
                   newPassword={newPassword}
                   setNewPassword={setNewPassword}
                   confirmPassword={confirmPassword}

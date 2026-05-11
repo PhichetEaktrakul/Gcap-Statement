@@ -1,54 +1,65 @@
 "use client";
 
-const PASSWORD_CHECKS: { label: string; test: (p: string) => boolean }[] = [
-  { label: "อย่างน้อย 8 ตัวอักษร", test: (p) => p.length >= 8 },
-  { label: "มีตัวอักษรพิมพ์ใหญ่ (A–Z)", test: (p) => /[A-Z]/.test(p) },
-  { label: "มีตัวอักษรพิมพ์เล็ก (a–z)", test: (p) => /[a-z]/.test(p) },
-  { label: "มีตัวเลข (0–9)", test: (p) => /[0-9]/.test(p) },
-  {
-    label: "มีอักขระพิเศษ (เช่น ! @ # $)",
-    test: (p) => /[^A-Za-z0-9]/.test(p),
-  },
-];
+import { Check } from "lucide-react";
 
-export function isPasswordStrong(p: string): boolean {
-  return PASSWORD_CHECKS.every((c) => c.test(p));
-}
+type Props = {
+  score: number | null;
+  errors: string[] | null;
+  isValid: boolean | null;
+  loading?: boolean;
+};
 
-export default function PasswordStrength({ password }: { password: string }) {
-  const checks = PASSWORD_CHECKS.map((c) => ({
-    label: c.label,
-    ok: c.test(password),
-  }));
-  const score = checks.filter((c) => c.ok).length;
-  const total = checks.length;
+const MAX_SCORE = 4;
 
+export default function PasswordStrength({
+  score,
+  errors,
+  isValid,
+  loading,
+}: Props) {
   function segColor(idx: number): string {
-    if (idx >= score) return "bg-gray-200";
-    if (score <= 2) return "bg-red-500";
-    if (score <= 3) return "bg-yellow-500";
-    if (score <= 4) return "bg-blue-500";
+    if (score === null || idx >= score) return "bg-gray-200";
+    if (score <= 1) return "bg-red-500";
+    if (score === 2) return "bg-yellow-500";
+    if (score === 3) return "bg-blue-500";
     return "bg-green-500";
   }
 
+  const showErrors = errors && errors.length > 0;
+  const showPassed = isValid && (!errors || errors.length === 0);
+
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-2">
       <div className="flex gap-1">
-        {Array.from({ length: total }).map((_, i) => (
+        {Array.from({ length: MAX_SCORE }).map((_, i) => (
           <div
             key={i}
             className={`flex-1 h-1 rounded-full transition-colors ${segColor(i)}`}
           />
         ))}
       </div>
-      <ul className="text-xs space-y-0.5">
-        {checks.map((c, i) => (
-          <li key={i} className={c.ok ? "text-green-600" : "text-gray-500"}>
-            <span className="inline-block w-3">{c.ok ? "✓" : "•"}</span>{" "}
-            {c.label}
-          </li>
-        ))}
-      </ul>
+
+      {loading && (
+        <div className="text-xs text-gray-400">กำลังตรวจสอบรหัสผ่าน...</div>
+      )}
+
+      {!loading && showErrors && (
+        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+          <div className="font-medium mb-1">รหัสผ่านยังไม่ปลอดภัย</div>
+          <ul className="space-y-0.5 list-disc list-inside text-xs">
+            {errors!.map((e, i) => (
+              <li key={i}>{e}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {!loading && showPassed && (
+        <div className="rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-700 flex items-center gap-2">
+          <Check className="w-4 h-4" />
+          <span>รหัสผ่านปลอดภัย</span>
+        </div>
+      )}
     </div>
   );
 }

@@ -36,6 +36,17 @@ export type SetPasswordPayload = {
   confirmPassword: string;
 };
 
+export type ValidatePasswordPayload = {
+  code: string;
+  password: string;
+};
+
+export type ValidatePasswordData = {
+  isValid: boolean;
+  score: number;
+  errors: string[];
+};
+
 export const authService = {
   login: (payload: LoginPayload) =>
     apiClient
@@ -62,6 +73,14 @@ export const authService = {
       .post<ApiResponse<null>>(ENDPOINTS.auth.setPassword, payload, {
         headers: { Authorization: `Bearer ${stage2Token}` },
       })
+      .then((r) => r.data),
+
+  validatePassword: (payload: ValidatePasswordPayload) =>
+    apiClient
+      .post<ApiResponse<ValidatePasswordData>>(
+        ENDPOINTS.auth.validatePassword,
+        payload
+      )
       .then((r) => r.data),
 
   logout: () =>
