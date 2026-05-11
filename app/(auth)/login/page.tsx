@@ -285,6 +285,7 @@ export default function AuthPage() {
                 )}
                 {step === 3 && (
                   <Step3Form
+                    code={regCode}
                     newPassword={newPassword}
                     setNewPassword={setNewPassword}
                     confirmPassword={confirmPassword}
