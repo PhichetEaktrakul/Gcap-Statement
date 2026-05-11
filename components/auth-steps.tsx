@@ -232,11 +232,6 @@ export function Step3Form({
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
         />
-        {newPassword.length > 0 &&
-          confirmPassword.length > 0 &&
-          newPassword !== confirmPassword && (
-            <p className="text-xs text-red-500">รหัสผ่านไม่ตรงกัน</p>
-          )}
       </div>
 
       <PasswordStrength
@@ -244,6 +239,11 @@ export function Step3Form({
         errors={result?.errors ?? null}
         isValid={result?.isValid ?? null}
         loading={validating}
+        mismatch={
+          newPassword.length > 0 &&
+          confirmPassword.length > 0 &&
+          newPassword !== confirmPassword
+        }
       />
 
       <Button
