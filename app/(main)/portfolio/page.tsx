@@ -207,14 +207,11 @@ export default function PortfolioPage() {
   );
 
   const stats = useMemo(() => {
-    const sumSigned = (
-      rows: ActiveTicketItem[],
-      pick: (i: ActiveTicketItem) => number
-    ) => {
+    const sumSignedQty = (rows: ActiveTicketItem[]) => {
       let s = 0;
       for (const item of rows) {
         const sign = item.command === 1 ? -1 : 1;
-        s += sign * Math.abs(pick(item));
+        s += sign * Math.abs(item.quantity);
       }
       return s;
     };
@@ -233,17 +230,34 @@ export default function PortfolioPage() {
     const qty96 =
       checked96.length === 0
         ? "--"
-        : fmtPlainSigned(sumSigned(checked96, (i) => i.quantity));
+        : fmtPlainSigned(sumSignedQty(checked96));
     const qty99 =
       checked99.length === 0
         ? "--"
-        : fmtPlainSigned(sumSigned(checked99, (i) => i.quantity));
+        : fmtPlainSigned(sumSignedQty(checked99));
 
-    const totalText =
-      allChecked.length === 0
-        ? "--"
-        : fmtPlainSigned(sumSigned(allChecked, (i) => i.totalPrice));
+    // Total = sum of UNREALIZE for the CHECKED rows.
+    let totalText = "--";
+    let totalCls = "";
+    if (allChecked.length > 0 && goldPrices) {
+      let sum = 0;
+      let ok = true;
+      for (const item of allChecked) {
+        const u = unrealizeOf(item, goldPrices);
+        if (u === null) {
+          ok = false;
+          break;
+        }
+        sum += u;
+      }
+      if (ok) {
+        const f = fmtSignedColored(sum);
+        totalText = f.text;
+        totalCls = f.cls;
+      }
+    }
 
+    // Unrealize P/L = sum of UNREALIZE for the UNCHECKED rows.
     let unrText = "--";
     let unrCls = "";
     if (allUnchecked.length > 0 && goldPrices) {
@@ -264,7 +278,7 @@ export default function PortfolioPage() {
       }
     }
 
-    return { qty96, qty99, totalText, unrText, unrCls };
+    return { qty96, qty99, totalText, totalCls, unrText, unrCls };
   }, [items96, items99, committedSelection, goldPrices]);
 
   function handleSearch() {
@@ -361,7 +375,7 @@ export default function PortfolioPage() {
               <div className="flex flex-wrap gap-3">
                 <StatCard label="QTY 96.50" value={stats.qty96} />
                 <StatCard label="QTY 99.99" value={stats.qty99} />
-                <StatCard label="Total" value={stats.totalText} />
+                <StatCard label="Total" value={stats.totalText} valueClass={stats.totalCls} />
                 <StatCard
                   label="Unrealize P/L"
                   value={stats.unrText}
