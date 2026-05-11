@@ -236,25 +236,15 @@ export default function PortfolioPage() {
         ? "--"
         : fmtPlainSigned(sumSignedQty(checked99));
 
-    // Total = sum of UNREALIZE for the CHECKED rows.
+    // Total = sum of raw totalPrice for the CHECKED rows (no sign flipping —
+    // API's natural sign is preserved). Negative => red.
     let totalText = "--";
     let totalCls = "";
-    if (allChecked.length > 0 && goldPrices) {
+    if (allChecked.length > 0) {
       let sum = 0;
-      let ok = true;
-      for (const item of allChecked) {
-        const u = unrealizeOf(item, goldPrices);
-        if (u === null) {
-          ok = false;
-          break;
-        }
-        sum += u;
-      }
-      if (ok) {
-        const f = fmtSignedColored(sum);
-        totalText = f.text;
-        totalCls = f.cls;
-      }
+      for (const item of allChecked) sum += item.totalPrice;
+      totalText = fmtPlainSigned(sum);
+      totalCls = sum < 0 ? "text-red-500" : "";
     }
 
     // Unrealize P/L = sum of UNREALIZE for the UNCHECKED rows.
@@ -538,13 +528,19 @@ function TicketSection({
                   />
                 </TableHead>
                 <TableHead>วันที่/เวลา</TableHead>
-                <TableHead>BY</TableHead>
-                <TableHead>คำสั่ง</TableHead>
-                <TableHead className="text-right">จำนวน</TableHead>
-                <TableHead className="text-right">ราคา</TableHead>
-                <TableHead className="text-right">TOTAL</TableHead>
-                <TableHead className="text-right">UNREALIZE</TableHead>
-                <TableHead className="text-center">วันครบดีล</TableHead>
+              <TableHead className="hidden md:table-cell">BY</TableHead>
+              <TableHead>คำสั่ง</TableHead>
+              <TableHead className="text-right">จำนวน</TableHead>
+              <TableHead className="text-right">ราคา</TableHead>
+              <TableHead className="hidden md:table-cell text-right">
+                TOTAL
+              </TableHead>
+              <TableHead className="hidden md:table-cell text-right">
+                UNREALIZE
+              </TableHead>
+              <TableHead className="hidden md:table-cell text-center">
+                วันครบดีล
+              </TableHead>
               </TableRow>
             </TableHeader>
 
@@ -601,7 +597,7 @@ function TicketSection({
                       <TableCell>
                         <DateTimeCell iso={item.createDate} />
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="hidden md:table-cell">
                         <span
                           className={`px-2 py-1 text-xs rounded-full ${
                             item.ticketType === "C"
@@ -631,16 +627,16 @@ function TicketSection({
                         {fmtNumber(item.pricePerUnit)}
                       </TableCell>
                       <TableCell
-                        className={`text-right tabular-nums ${
+                        className={`hidden md:table-cell text-right tabular-nums ${
                           item.totalPrice < 0 ? "text-red-500" : ""
                         }`}>
                         {fmtPlainSigned(item.totalPrice)}
                       </TableCell>
                       <TableCell
-                        className={`text-right tabular-nums ${uFormatted.cls}`}>
+                        className={`hidden md:table-cell text-right tabular-nums ${uFormatted.cls}`}>
                         {uFormatted.text}
                       </TableCell>
-                      <TableCell className="text-center">
+                      <TableCell className="hidden md:table-cell text-center">
                         {fmtDate(getDueDate(item))}
                       </TableCell>
                     </TableRow>
@@ -687,12 +683,17 @@ function PortfolioDrawer({
             <Row label="ทรัพย์สิน" value={purityLabel(item.asset)} />
             <Row
               label="จำนวน"
-              value={`${fmtNumber(Math.abs(item.quantity))} ${qtyTypeLabel(
+              value={`${fmtPlainSigned(item.quantity)} ${qtyTypeLabel(
                 item.quantityTypeText
               )}`}
+              valueClass={item.quantity < 0 ? "text-red-500" : ""}
             />
             <Row label="ราคา" value={fmtNumber(item.pricePerUnit)} />
-            <Row label="Total" value={fmtNumber(Math.abs(item.totalPrice))} />
+            <Row
+              label="Total"
+              value={fmtPlainSigned(item.totalPrice)}
+              valueClass={item.totalPrice < 0 ? "text-red-500" : ""}
+            />
             <Row
               label="Unrealize P/L"
               value={uFormatted.text}
