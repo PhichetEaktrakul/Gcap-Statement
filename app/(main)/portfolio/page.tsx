@@ -51,6 +51,7 @@ type GoldPrices = {
   gold99_sell: number;
   gold96_buy: number;
   gold96_sell: number;
+  updateTime: string;
 };
 
 function fmtDate(iso: string): string {
@@ -160,6 +161,7 @@ export default function PortfolioPage() {
           gold99_sell: data.gold99_sell,
           gold96_buy: data.gold96_buy,
           gold96_sell: data.gold96_sell,
+          updateTime: data.created_at,
         });
       })
       .catch(() => {});
@@ -376,6 +378,9 @@ export default function PortfolioPage() {
           loading={loading}
           items={items96}
           goldPrices={goldPrices}
+          headerBuy={goldPrices?.gold96_buy}
+          headerSell={goldPrices?.gold96_sell}
+          updateTime={goldPrices?.updateTime}
           selectedIds={selectedIds}
           onToggleSelect={toggleSelect}
           onSelectAllOnSection={() => selectAllOnSection(items96)}
@@ -388,6 +393,9 @@ export default function PortfolioPage() {
           loading={loading}
           items={items99}
           goldPrices={goldPrices}
+          headerBuy={goldPrices?.gold99_buy}
+          headerSell={goldPrices?.gold99_sell}
+          updateTime={goldPrices?.updateTime}
           selectedIds={selectedIds}
           onToggleSelect={toggleSelect}
           onSelectAllOnSection={() => selectAllOnSection(items99)}
@@ -429,6 +437,9 @@ function TicketSection({
   loading,
   items,
   goldPrices,
+  headerBuy,
+  headerSell,
+  updateTime,
   selectedIds,
   onToggleSelect,
   onSelectAllOnSection,
@@ -438,6 +449,9 @@ function TicketSection({
   loading: boolean;
   items: ActiveTicketItem[];
   goldPrices: GoldPrices | null;
+  headerBuy?: number;
+  headerSell?: number;
+  updateTime?: string;
   selectedIds: Set<string>;
   onToggleSelect: (id: string) => void;
   onSelectAllOnSection: () => void;
@@ -447,6 +461,16 @@ function TicketSection({
   const allSelected =
     items.length > 0 && items.every((i) => selectedIds.has(i.ticketCode));
 
+  // Pull HH:mm:ss out of "YYYY-MM-DD HH:mm:ss.sss" (or any string that contains it).
+  const timeMatch = updateTime?.match(/(\d{2}):(\d{2}):(\d{2})/);
+  const timeText = timeMatch
+    ? `${timeMatch[1]}:${timeMatch[2]}:${timeMatch[3]}`
+    : null;
+  const priceLine =
+    timeText !== null && headerBuy !== undefined && headerSell !== undefined
+      ? `ราคา ณ เวลา ${timeText} น.: ${fmtNumber(headerBuy)} / ${fmtNumber(headerSell)}`
+      : null;
+
   return (
     <Card className="rounded-xl">
       {/* HEADER (clickable) */}
@@ -455,12 +479,21 @@ function TicketSection({
         onClick={() => setExpanded((v) => !v)}
         className="w-full flex items-center justify-between gap-3 px-4 md:px-5 text-left"
         aria-expanded={expanded}>
-        <div className="flex items-center gap-2">
-          <h2 className="text-base md:text-lg font-semibold">{title}</h2>
-          <span className="text-sm text-gray-500">({items.length})</span>
+        <div className="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-4 min-w-0">
+          <div className="flex items-center gap-2">
+            <h2 className="text-base md:text-lg font-semibold">{title}</h2>
+            <span className="text-sm text-gray-500">
+              ({items.length} รายการ)
+            </span>
+          </div>
+          {priceLine && (
+            <span className="text-xs text-gray-500 whitespace-nowrap">
+              {priceLine}
+            </span>
+          )}
         </div>
         <ChevronDown
-          className={`w-5 h-5 text-gray-500 transition-transform ${
+          className={`w-5 h-5 text-gray-500 transition-transform shrink-0 ${
             expanded ? "rotate-180" : ""
           }`}
         />
