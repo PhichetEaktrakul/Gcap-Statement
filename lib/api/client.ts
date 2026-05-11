@@ -94,6 +94,10 @@ function performRefresh(): Promise<string> {
   return refreshingPromise;
 }
 
+export function refreshAccessToken(): Promise<string> {
+  return performRefresh();
+}
+
 apiClient.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {

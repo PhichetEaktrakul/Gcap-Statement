@@ -15,7 +15,7 @@ import {
   type CustomerProfile,
 } from "@/lib/api/services/customer.service";
 import { authService } from "@/lib/api/services/auth.service";
-import { setAccessToken } from "@/lib/api/client";
+import { refreshAccessToken, setAccessToken } from "@/lib/api/client";
 
 export default function ProfilePopover() {
   const router = useRouter();
@@ -45,10 +45,29 @@ export default function ProfilePopover() {
   async function handleLogout() {
     setLoggingOut(true);
     try {
-      const res = await authService.logout();
+      let res: Awaited<ReturnType<typeof authService.logout>> | undefined;
+      try {
+        res = await authService.logout();
+      } catch (err) {
+        const status = (err as { response?: { status?: number } })?.response
+          ?.status;
+        if (status !== 401) throw err;
+        // Token expired — refresh once and retry.
+        try {
+          await refreshAccessToken();
+          res = await authService.logout();
+        } catch {
+          // Refresh failed (or the retried logout failed). Clear locally and
+          // bail out to /login without a success toast.
+          setAccessToken(null);
+          setOpen(false);
+          router.replace("/login");
+          return;
+        }
+      }
       setAccessToken(null);
       setOpen(false);
-      toast.success(res.message || "ออกจากระบบสำเร็จ");
+      toast.success(res?.message || "ออกจากระบบสำเร็จ");
       router.replace("/login");
     } catch (err) {
       const e = err as { response?: { data?: { message?: string } } };
