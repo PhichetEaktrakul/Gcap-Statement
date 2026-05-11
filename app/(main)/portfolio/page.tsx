@@ -108,18 +108,17 @@ function unrealizeOf(
   item: ActiveTicketItem,
   prices: GoldPrices | null
 ): number | null {
+  // 99.99%: quantity * pricePerUnit * 65.6 — no spot prices needed.
+  if (item.asset === 1) {
+    return item.quantity * item.pricePerUnit * 65.6;
+  }
+
+  // 96.50%: compare totalPrice against current spot.
   if (!prices) return null;
   const qtyAbs = Math.abs(item.quantity);
   const totalAbs = Math.abs(item.totalPrice);
-
-  let spot: number | undefined;
-  if (item.asset === 2) {
-    spot = item.command === 1 ? prices.gold96_sell : prices.gold96_buy;
-  } else if (item.asset === 1) {
-    spot = item.command === 1 ? prices.gold99_sell : prices.gold99_buy;
-  }
-  if (spot === undefined) return null;
-
+  const spot =
+    item.command === 1 ? prices.gold96_sell : prices.gold96_buy;
   return item.command === 1 ? totalAbs - spot * qtyAbs : spot * qtyAbs - totalAbs;
 }
 
@@ -589,14 +588,20 @@ function TicketSection({
                           {commandLabel(item.command)}
                         </span>
                       </TableCell>
-                      <TableCell className="text-right tabular-nums">
-                        {fmtNumber(Math.abs(item.quantity))}
+                      <TableCell
+                        className={`text-right tabular-nums ${
+                          item.quantity < 0 ? "text-red-500" : ""
+                        }`}>
+                        {fmtPlainSigned(item.quantity)}
                       </TableCell>
                       <TableCell className="text-right tabular-nums">
                         {fmtNumber(item.pricePerUnit)}
                       </TableCell>
-                      <TableCell className="text-right tabular-nums">
-                        {fmtNumber(Math.abs(item.totalPrice))}
+                      <TableCell
+                        className={`text-right tabular-nums ${
+                          item.totalPrice < 0 ? "text-red-500" : ""
+                        }`}>
+                        {fmtPlainSigned(item.totalPrice)}
                       </TableCell>
                       <TableCell
                         className={`text-right tabular-nums ${uFormatted.cls}`}>

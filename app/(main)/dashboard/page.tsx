@@ -48,27 +48,27 @@ export default function DashboardPage() {
       {/* SUMMARY CARDS */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
         <Card className="rounded-xl">
-          <CardContent className="p-4 md:p-5">
+          <CardContent className="px-4 md:px-5 py-1">
             <div className="text-sm text-gray-500">เงินฝาก</div>
-            <div className="text-xl md:text-2xl font-bold mt-2 text-right">
+            <div className="text-lg md:text-xl font-bold mt-1 text-right">
               {fmt(assets?.cashAmount)} THB
             </div>
           </CardContent>
         </Card>
 
         <Card className="rounded-xl">
-          <CardContent className="p-4 md:p-5">
+          <CardContent className="px-4 md:px-5 py-1">
             <div className="text-sm text-gray-500">ทองฝาก GOLD 96.50%</div>
-            <div className="text-xl md:text-2xl font-bold mt-2 text-right">
+            <div className="text-lg md:text-xl font-bold mt-1 text-right">
               {fmtGold(assets?.gold965)} BAHT
             </div>
           </CardContent>
         </Card>
 
         <Card className="rounded-xl sm:col-span-2 lg:col-span-1">
-          <CardContent className="p-4 md:p-5">
+          <CardContent className="px-4 md:px-5 py-1">
             <div className="text-sm text-gray-500">ทองฝาก GOLD 99.99%</div>
-            <div className="text-xl md:text-2xl font-bold mt-2 text-right">
+            <div className="text-lg md:text-xl font-bold mt-1 text-right">
               {fmtGold(assets?.gold999)} KG
             </div>
           </CardContent>
@@ -86,14 +86,26 @@ export default function DashboardPage() {
 
           <div className="grid grid-cols-3 py-3 md:py-4 border-b text-xs md:text-sm">
             <div className="text-blue-600">99.99%</div>
-            <div className="text-center">{fmt(margin?.canSell9999)} KG</div>
-            <div className="text-center">{fmt(margin?.canBuy9999)} KG</div>
+            <div className="text-center">
+              {fmt(margin?.canSell9999)}
+              <span className="ml-3">KG</span>
+            </div>
+            <div className="text-center">
+              {fmt(margin?.canBuy9999)}
+              <span className="ml-3">KG</span>
+            </div>
           </div>
 
           <div className="grid grid-cols-3 py-3 md:py-4 text-xs md:text-sm">
             <div className="text-blue-600">96.50%</div>
-            <div className="text-center">{fmt(margin?.canSell9650)} BAHT</div>
-            <div className="text-center">{fmt(margin?.canBuy9650)} BAHT</div>
+            <div className="text-center">
+              {fmt(margin?.canSell9650)}
+              <span className="ml-3">BAHT</span>
+            </div>
+            <div className="text-center">
+              {fmt(margin?.canBuy9650)}
+              <span className="ml-3">BAHT</span>
+            </div>
           </div>
         </CardContent>
       </Card>

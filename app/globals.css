@@ -137,8 +137,9 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: Tahoma, "Helvetica Neue", Arial, sans-serif;
   }
   html {
-    @apply font-sans;
+    font-family: Tahoma, "Helvetica Neue", Arial, sans-serif;
   }
 }
