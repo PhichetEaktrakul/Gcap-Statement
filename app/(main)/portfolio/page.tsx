@@ -108,9 +108,15 @@ function unrealizeOf(
   item: ActiveTicketItem,
   prices: GoldPrices | null
 ): number | null {
-  // 99.99%: quantity * pricePerUnit * 65.6 — no spot prices needed.
+  // 99.99%: (qty * spot * 65.6) − (qty * pricePerUnit * 65.6).
+  // spot = gold99_sell for ขาย (command 1), gold99_buy for ซื้อ (command 2).
   if (item.asset === 1) {
-    return item.quantity * item.pricePerUnit * 65.6;
+    if (!prices) return null;
+    const spot =
+      item.command === 1 ? prices.gold99_sell : prices.gold99_buy;
+    return (
+      item.quantity * spot * 65.6 - item.quantity * item.pricePerUnit * 65.6
+    );
   }
 
   // 96.50%: compare totalPrice against current spot.
@@ -381,6 +387,7 @@ export default function PortfolioPage() {
           headerSell={goldPrices?.gold96_sell}
           updateTime={goldPrices?.updateTime}
           selectedIds={selectedIds}
+          committedSelection={committedSelection}
           onToggleSelect={toggleSelect}
           onSelectAllOnSection={() => selectAllOnSection(items96)}
           onOpen={openTicket}
@@ -396,6 +403,7 @@ export default function PortfolioPage() {
           headerSell={goldPrices?.gold99_sell}
           updateTime={goldPrices?.updateTime}
           selectedIds={selectedIds}
+          committedSelection={committedSelection}
           onToggleSelect={toggleSelect}
           onSelectAllOnSection={() => selectAllOnSection(items99)}
           onOpen={openTicket}
@@ -440,6 +448,7 @@ function TicketSection({
   headerSell,
   updateTime,
   selectedIds,
+  committedSelection,
   onToggleSelect,
   onSelectAllOnSection,
   onOpen,
@@ -452,6 +461,7 @@ function TicketSection({
   headerSell?: number;
   updateTime?: string;
   selectedIds: Set<string>;
+  committedSelection: Set<string>;
   onToggleSelect: (id: string) => void;
   onSelectAllOnSection: () => void;
   onOpen: (item: ActiveTicketItem) => void;
@@ -547,9 +557,18 @@ function TicketSection({
               {!loading &&
                 items.map((item) => {
                   const isSelected = selectedIds.has(item.ticketCode);
+                  const isCommitted = committedSelection.has(item.ticketCode);
                   const u = unrealizeOf(item, goldPrices);
-                  const uFormatted =
-                    u === null ? { text: "—", cls: "" } : fmtSignedColored(u);
+                  let uFormatted: { text: string; cls: string };
+                  if (isCommitted) {
+                    // Committed rows zero out in the display until the user
+                    // unticks and presses คำนวน again.
+                    uFormatted = { text: "0", cls: "" };
+                  } else if (u === null) {
+                    uFormatted = { text: "—", cls: "" };
+                  } else {
+                    uFormatted = fmtSignedColored(u);
+                  }
                   return (
                     <TableRow
                       key={item.ticketCode}
@@ -607,7 +626,9 @@ function TicketSection({
                         className={`text-right tabular-nums ${uFormatted.cls}`}>
                         {uFormatted.text}
                       </TableCell>
-                      <TableCell>{fmtDate(getDueDate(item))}</TableCell>
+                      <TableCell className="text-center">
+                        {fmtDate(getDueDate(item))}
+                      </TableCell>
                     </TableRow>
                   );
                 })}
