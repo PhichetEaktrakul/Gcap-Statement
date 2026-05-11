@@ -530,7 +530,7 @@ function TicketSection({
                 <TableHead className="text-right">ราคา</TableHead>
                 <TableHead className="text-right">TOTAL</TableHead>
                 <TableHead className="text-right">UNREALIZE</TableHead>
-                <TableHead>วันครบดีล</TableHead>
+                <TableHead className="text-center">วันครบดีล</TableHead>
               </TableRow>
             </TableHeader>
 
