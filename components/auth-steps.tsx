@@ -232,6 +232,11 @@ export function Step3Form({
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
         />
+        {newPassword.length > 0 &&
+          confirmPassword.length > 0 &&
+          newPassword !== confirmPassword && (
+            <p className="text-xs text-red-500">รหัสผ่านไม่ตรงกัน</p>
+          )}
       </div>
 
       <PasswordStrength
@@ -245,7 +250,11 @@ export function Step3Form({
         className="w-full"
         onClick={handleSubmit}
         disabled={
-          loading || validating || !newPassword || !confirmPassword
+          loading ||
+          validating ||
+          !newPassword ||
+          !confirmPassword ||
+          newPassword !== confirmPassword
         }>
         {loading ? "กำลังดำเนินการ..." : submitLabel}
       </Button>
