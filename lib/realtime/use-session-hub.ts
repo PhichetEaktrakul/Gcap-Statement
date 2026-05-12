@@ -28,10 +28,9 @@ export function useSessionHub() {
     let cancelled = false;
 
     (async () => {
+      const token = getAccessToken() ?? "";
       const conn = new HubConnectionBuilder()
-        .withUrl(HUB_URL, {
-          accessTokenFactory: () => getAccessToken() ?? "",
-        })
+        .withUrl(`${HUB_URL}?access_token=${encodeURIComponent(token)}`)
         .withAutomaticReconnect([0, 2000, 5000, 10000, 30000])
         .configureLogging(LogLevel.Warning)
         .build();
