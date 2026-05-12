@@ -12,6 +12,7 @@ import { authService } from "@/lib/api/services/auth.service";
 import { getAccessToken, setAccessToken } from "@/lib/api/client";
 import { registrationStorage } from "@/lib/api/auth-storage";
 import { Step1Form, Step2Form, Step3Form } from "@/components/auth-steps";
+import CatLogo from "@/components/cat-logo";
 
 type View = "login" | "register" | "forgot";
 
@@ -155,11 +156,7 @@ export default function AuthPage() {
           {/* LOGO HEADER */}
           <div className="flex flex-col items-center gap-2 mb-6">
             <div className="bg-white rounded-xl p-2 ring-1 ring-gray-200 shadow-sm">
-              <img
-                src="/gcap-logo.png"
-                alt="GCAP"
-                className="h-16 w-16 object-contain"
-              />
+              <CatLogo size={64} />
             </div>
             <div className="text-xs uppercase tracking-[0.2em] text-gray-500 font-medium">
               statement

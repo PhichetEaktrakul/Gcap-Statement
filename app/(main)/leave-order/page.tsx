@@ -34,7 +34,8 @@ import { dateToDdMmYyyy, parseDdMmYyyy } from "@/lib/date";
 import DateField from "@/components/date-field";
 import DateTimeCell from "@/components/datetime-cell";
 
-const PAGE_SIZE = 15;
+const PAGE_SIZE_OPTIONS = [10, 20, 50] as const;
+const DEFAULT_PAGE_SIZE = 10;
 
 type Filters = {
   asset: string;
@@ -159,6 +160,7 @@ export default function LeaveOrderPage() {
   const [appliedFilters, setAppliedFilters] =
     useState<Filters>(buildInitialFilters);
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState<number>(DEFAULT_PAGE_SIZE);
   const [selected, setSelected] = useState<LeaveOrderItem | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
@@ -215,20 +217,25 @@ export default function LeaveOrderPage() {
   }, [allItems, appliedFilters]);
 
   const totalCount = filtered.length;
-  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
 
   // Clamp page if filters shrink the result set below current page.
   useEffect(() => {
     if (page > totalPages) setPage(totalPages);
   }, [page, totalPages]);
 
-  const pageItems = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-  const start = totalCount === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
-  const end = Math.min(page * PAGE_SIZE, totalCount);
+  const pageItems = filtered.slice((page - 1) * pageSize, page * pageSize);
+  const start = totalCount === 0 ? 0 : (page - 1) * pageSize + 1;
+  const end = Math.min(page * pageSize, totalCount);
 
   function handleSearch() {
     setPage(1);
     setAppliedFilters(filters);
+  }
+
+  function handlePageSizeChange(n: number) {
+    setPageSize(n);
+    setPage(1);
   }
 
   function openOrder(item: LeaveOrderItem) {
@@ -318,7 +325,7 @@ export default function LeaveOrderPage() {
                   <TableHead>ทรัพย์สิน</TableHead>
                   <TableHead className="text-right">จำนวน</TableHead>
                   <TableHead className="text-right">ราคาตั้ง</TableHead>
-                  <TableHead>สถานะ</TableHead>
+                  <TableHead className="text-center">สถานะ</TableHead>
                 </TableRow>
               </TableHeader>
 
@@ -371,7 +378,9 @@ export default function LeaveOrderPage() {
                         {fmtNumber(item.pricePerUnit)}
                       </TableCell>
                       <TableCell>
-                        <StatusIcon status={item.statusText} />
+                        <div className="flex justify-center">
+                          <StatusIcon status={item.statusText} />
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -381,9 +390,15 @@ export default function LeaveOrderPage() {
 
             {/* PAGINATION */}
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 p-4 text-sm text-gray-500">
-              <span>
-                แสดง {start}–{end} จาก {totalCount.toLocaleString()}
-              </span>
+              <div className="flex flex-wrap items-center gap-3">
+                <span>
+                  แสดง {start}–{end} จาก {totalCount.toLocaleString()}
+                </span>
+                <PageSizeSelect
+                  value={pageSize}
+                  onChange={handlePageSizeChange}
+                />
+              </div>
               <Pagination
                 page={page}
                 totalPages={totalPages}
@@ -413,6 +428,32 @@ export default function LeaveOrderPage() {
         item={selected}
       />
     </>
+  );
+}
+
+function PageSizeSelect({
+  value,
+  onChange,
+}: {
+  value: number;
+  onChange: (n: number) => void;
+}) {
+  return (
+    <div className="flex items-center gap-1.5">
+      <span className="text-xs text-gray-500">/ หน้า</span>
+      <Select value={String(value)} onValueChange={(v) => onChange(Number(v))}>
+        <SelectTrigger className="h-8 w-[72px]">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {PAGE_SIZE_OPTIONS.map((n) => (
+            <SelectItem key={n} value={String(n)}>
+              {n}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
   );
 }
 

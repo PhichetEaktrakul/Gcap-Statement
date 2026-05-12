@@ -35,7 +35,8 @@ import { parseDdMmYyyy } from "@/lib/date";
 import DateField from "@/components/date-field";
 import DateTimeCell from "@/components/datetime-cell";
 
-const PAGE_SIZE = 15;
+const PAGE_SIZE_OPTIONS = [10, 20, 50] as const;
+const DEFAULT_PAGE_SIZE = 10;
 
 type Filters = {
   searchTerm: string;
@@ -88,6 +89,7 @@ export default function HistoryPage() {
   const [filters, setFilters] = useState<Filters>(initialFilters);
   const [appliedFilters, setAppliedFilters] = useState<Filters>(initialFilters);
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState<number>(DEFAULT_PAGE_SIZE);
   const [items, setItems] = useState<TicketHistoryItem[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
@@ -98,7 +100,7 @@ export default function HistoryPage() {
   useEffect(() => {
     const params: TicketHistoryParams = {
       Page: page,
-      PageSize: PAGE_SIZE,
+      PageSize: pageSize,
     };
     if (appliedFilters.searchTerm)
       params.SearchTerm = appliedFilters.searchTerm;
@@ -131,11 +133,16 @@ export default function HistoryPage() {
     return () => {
       cancelled = true;
     };
-  }, [appliedFilters, page]);
+  }, [appliedFilters, page, pageSize]);
 
   function handleSearch() {
     setPage(1);
     setAppliedFilters(filters);
+  }
+
+  function handlePageSizeChange(n: number) {
+    setPageSize(n);
+    setPage(1);
   }
 
   function openTicket(item: TicketHistoryItem) {
@@ -143,8 +150,8 @@ export default function HistoryPage() {
     setDrawerOpen(true);
   }
 
-  const start = totalCount === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
-  const end = Math.min(page * PAGE_SIZE, totalCount);
+  const start = totalCount === 0 ? 0 : (page - 1) * pageSize + 1;
+  const end = Math.min(page * pageSize, totalCount);
 
   return (
     <>
@@ -308,9 +315,15 @@ export default function HistoryPage() {
 
             {/* PAGINATION */}
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 p-4 text-sm text-gray-500">
-              <span>
-                แสดง {start}–{end} จาก {totalCount.toLocaleString()}
-              </span>
+              <div className="flex flex-wrap items-center gap-3">
+                <span>
+                  แสดง {start}–{end} จาก {totalCount.toLocaleString()}
+                </span>
+                <PageSizeSelect
+                  value={pageSize}
+                  onChange={handlePageSizeChange}
+                />
+              </div>
               <Pagination
                 page={page}
                 totalPages={totalPages}
@@ -327,6 +340,32 @@ export default function HistoryPage() {
         item={selected}
       />
     </>
+  );
+}
+
+function PageSizeSelect({
+  value,
+  onChange,
+}: {
+  value: number;
+  onChange: (n: number) => void;
+}) {
+  return (
+    <div className="flex items-center gap-1.5">
+      <span className="text-xs text-gray-500">/ หน้า</span>
+      <Select value={String(value)} onValueChange={(v) => onChange(Number(v))}>
+        <SelectTrigger className="h-8 w-[72px]">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {PAGE_SIZE_OPTIONS.map((n) => (
+            <SelectItem key={n} value={String(n)}>
+              {n}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
   );
 }
 

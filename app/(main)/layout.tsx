@@ -6,6 +6,7 @@ import AppSidebar from "@/components/app-sidebar";
 import Topbar from "@/components/topbar";
 import BottomNav from "@/components/bottom-nav";
 import { getAccessToken } from "@/lib/api/client";
+import { useSessionHub } from "@/lib/realtime/use-session-hub";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -18,6 +19,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       setAuthed(true);
     }
   }, [router]);
+
+  // Connect to the session hub once the auth check passes.
+  useSessionHub();
 
   if (!authed) return null;
 
