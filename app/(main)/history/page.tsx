@@ -71,6 +71,11 @@ function fmtNumber(n: number): string {
   });
 }
 
+function fmtPlainSigned(n: number): string {
+  if (n < 0) return `-${fmtNumber(Math.abs(n))}`;
+  return fmtNumber(n);
+}
+
 const channelLabel = (t: string) => (t === "C" ? "Call" : "Leave Order");
 const purityLabel = (a: number) =>
   a === 1 ? "Gold 99.99%" : a === 2 ? "Gold 96.50%" : "—";
@@ -217,7 +222,9 @@ export default function HistoryPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>วันที่/เวลา</TableHead>
-                  <TableHead>ช่องทาง</TableHead>
+                  <TableHead className="hidden md:table-cell">
+                    ช่องทาง
+                  </TableHead>
                   <TableHead>คำสั่ง</TableHead>
                   <TableHead>ทรัพย์สิน</TableHead>
                   <TableHead className="text-right">จำนวน</TableHead>
@@ -255,7 +262,7 @@ export default function HistoryPage() {
                       <TableCell>
                         <DateTimeCell iso={item.createDate} />
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="hidden md:table-cell">
                         <span
                           className={`px-2 py-1 text-xs rounded-full ${
                             item.ticketType === "C"
@@ -267,7 +274,7 @@ export default function HistoryPage() {
                       </TableCell>
                       <TableCell>
                         <span
-                          className={`px-2 py-1 text-xs rounded-full ${
+                          className={`inline-block min-w-[3rem] text-center px-2 py-1 text-xs rounded-full ${
                             item.command === 2
                               ? "bg-green-100 text-green-600"
                               : "bg-red-100 text-red-500"
@@ -278,14 +285,20 @@ export default function HistoryPage() {
                       <TableCell>
                         {item.asset === 1 ? "99.99%" : "96.50%"}
                       </TableCell>
-                      <TableCell className="text-right tabular-nums">
-                        {fmtNumber(Math.abs(item.quantity))}
+                      <TableCell
+                        className={`text-right tabular-nums ${
+                          item.quantity < 0 ? "text-red-500" : ""
+                        }`}>
+                        {fmtPlainSigned(item.quantity)}
                       </TableCell>
                       <TableCell className="text-right tabular-nums">
                         {fmtNumber(item.pricePerUnit)}
                       </TableCell>
-                      <TableCell className="text-right tabular-nums">
-                        {fmtNumber(Math.abs(item.totalPrice))}
+                      <TableCell
+                        className={`text-right tabular-nums ${
+                          item.totalPrice < 0 ? "text-red-500" : ""
+                        }`}>
+                        {fmtPlainSigned(item.totalPrice)}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -440,14 +453,16 @@ function TicketDrawer({
             <Row label="คำสั่ง" value={commandLabel(item.command)} />
             <Row
               label="จำนวน"
-              value={`${fmtNumber(Math.abs(item.quantity))} ${qtyTypeLabel(
+              value={`${fmtPlainSigned(item.quantity)} ${qtyTypeLabel(
                 item.quantityTypeText
               )}`}
+              valueClass={item.quantity < 0 ? "text-red-500" : ""}
             />
             <Row label="ราคา" value={fmtNumber(item.pricePerUnit)} />
             <Row
               label="รวม"
-              value={fmtNumber(Math.abs(item.totalPrice))}
+              value={fmtPlainSigned(item.totalPrice)}
+              valueClass={item.totalPrice < 0 ? "text-red-500" : ""}
             />
           </div>
         </div>
@@ -456,11 +471,19 @@ function TicketDrawer({
   );
 }
 
-function Row({ label, value }: { label: string; value: string }) {
+function Row({
+  label,
+  value,
+  valueClass = "",
+}: {
+  label: string;
+  value: string;
+  valueClass?: string;
+}) {
   return (
     <div className="flex justify-between gap-3 border-b pb-2">
       <span className="text-gray-500">{label}</span>
-      <span className="text-right">{value}</span>
+      <span className={`text-right ${valueClass}`}>{value}</span>
     </div>
   );
 }

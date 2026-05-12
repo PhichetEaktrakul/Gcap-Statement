@@ -296,7 +296,7 @@ export default function LeaveOrderPage() {
                       </TableCell>
                       <TableCell>
                         <span
-                          className={`px-2 py-1 text-xs rounded-full ${
+                          className={`inline-block min-w-[3rem] text-center px-2 py-1 text-xs rounded-full ${
                             item.command === 2
                               ? "bg-green-100 text-green-600"
                               : "bg-red-100 text-red-500"

@@ -362,7 +362,7 @@ export default function PortfolioPage() {
         <Card className="rounded-xl">
           <CardContent>
             <div className="flex flex-col lg:flex-row lg:items-center gap-4 lg:justify-between">
-              <div className="flex flex-wrap gap-3">
+              <div className="grid grid-cols-2 lg:flex lg:flex-wrap gap-2 md:gap-3 flex-1">
                 <StatCard label="QTY 96.50" value={stats.qty96} />
                 <StatCard label="QTY 99.99" value={stats.qty99} />
                 <StatCard label="Total" value={stats.totalText} valueClass={stats.totalCls} />
@@ -434,9 +434,12 @@ function StatCard({
   valueClass?: string;
 }) {
   return (
-    <div className="bg-gray-50 rounded-xl px-4 py-3 min-w-[150px]">
-      <div className="text-xs text-gray-500 leading-tight">{label}</div>
-      <div className={`font-semibold text-lg md:text-xl mt-1 ${valueClass}`}>
+    <div className="bg-gray-50 rounded-xl px-3 md:px-4 py-2 md:py-3 min-w-0 lg:min-w-[150px]">
+      <div className="text-[11px] md:text-xs text-gray-500 leading-tight">
+        {label}
+      </div>
+      <div
+        className={`font-semibold text-base md:text-lg lg:text-xl mt-0.5 md:mt-1 truncate ${valueClass}`}>
         {value}
       </div>
     </div>
@@ -609,7 +612,7 @@ function TicketSection({
                       </TableCell>
                       <TableCell>
                         <span
-                          className={`px-2 py-1 text-xs rounded-full ${
+                          className={`inline-block min-w-[3rem] text-center px-2 py-1 text-xs rounded-full ${
                             item.command === 2
                               ? "bg-green-100 text-green-600"
                               : "bg-red-100 text-red-500"
