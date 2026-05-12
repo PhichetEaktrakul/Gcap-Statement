@@ -84,15 +84,72 @@ const qtyTypeLabel = (t: string) =>
 const statusLabel = (s: string) =>
   s ? s.charAt(0).toUpperCase() + s.slice(1) : "—";
 
-const STATUS_STYLE: Record<string, string> = {
-  complete: "bg-green-100 text-green-600",
-  cancelled: "bg-gray-200 text-gray-600",
-  pending: "bg-yellow-100 text-yellow-700",
-  other: "bg-blue-100 text-blue-600",
-};
-
-function statusClass(s: string): string {
-  return STATUS_STYLE[s] ?? "bg-gray-100 text-gray-600";
+function StatusIcon({ status, size = 24 }: { status: string; size?: number }) {
+  if (status === "pending") {
+    return (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width={size}
+        height={size}
+        viewBox="0 0 24 24"
+        fill="none"
+        role="img"
+        aria-label="Pending">
+        <circle cx="12" cy="12" r="10" fill="#3B82F6" />
+        <path
+          d="M12 7V12L15 14"
+          stroke="white"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    );
+  }
+  if (status === "complete") {
+    return (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width={size}
+        height={size}
+        viewBox="0 0 24 24"
+        fill="none"
+        role="img"
+        aria-label="Complete">
+        <circle cx="12" cy="12" r="10" fill="#22C55E" />
+        <path
+          d="M7 12L10 15L17 8"
+          stroke="white"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    );
+  }
+  if (status === "cancelled") {
+    return (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width={size}
+        height={size}
+        viewBox="0 0 24 24"
+        fill="none"
+        role="img"
+        aria-label="Cancelled">
+        <circle cx="12" cy="12" r="10" fill="#EF4444" />
+        <path
+          d="M8 8L16 16M16 8L8 16"
+          stroke="white"
+          strokeWidth="2"
+          strokeLinecap="round"
+        />
+      </svg>
+    );
+  }
+  return (
+    <span className="text-xs text-gray-500">{statusLabel(status)}</span>
+  );
 }
 
 export default function LeaveOrderPage() {
@@ -314,12 +371,7 @@ export default function LeaveOrderPage() {
                         {fmtNumber(item.pricePerUnit)}
                       </TableCell>
                       <TableCell>
-                        <span
-                          className={`px-3 py-1 text-xs rounded-full ${statusClass(
-                            item.statusText
-                          )}`}>
-                          {statusLabel(item.statusText)}
-                        </span>
+                        <StatusIcon status={item.statusText} />
                       </TableCell>
                     </TableRow>
                   ))}
@@ -337,6 +389,19 @@ export default function LeaveOrderPage() {
                 totalPages={totalPages}
                 onChange={(n) => setPage(n)}
               />
+            </div>
+
+            {/* STATUS LEGEND */}
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 md:px-5 pb-4 text-xs text-gray-600">
+              <span className="flex items-center gap-1.5">
+                <StatusIcon status="pending" size={18} /> Pending
+              </span>
+              <span className="flex items-center gap-1.5">
+                <StatusIcon status="complete" size={18} /> Complete
+              </span>
+              <span className="flex items-center gap-1.5">
+                <StatusIcon status="cancelled" size={18} /> Cancelled
+              </span>
             </div>
           </CardContent>
         </Card>
