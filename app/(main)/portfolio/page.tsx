@@ -28,6 +28,13 @@ import {
 import DateField from "@/components/date-field";
 import DateTimeCell from "@/components/datetime-cell";
 import {
+  NO_SORT,
+  SortableHead,
+  nextSortState,
+  sortItems,
+  type SortState,
+} from "@/components/sortable-head";
+import {
   tradeService,
   type ActiveTicketItem,
 } from "@/lib/api/services/trade.service";
@@ -474,6 +481,42 @@ function TicketSection({
   onOpen: (item: ActiveTicketItem) => void;
 }) {
   const [expanded, setExpanded] = useState(true);
+  const [sort, setSort] = useState<SortState>(NO_SORT);
+
+  function handleSort(key: string) {
+    setSort((s) => nextSortState(s, key));
+  }
+
+  function getSortKey(item: ActiveTicketItem, key: string): string | number {
+    switch (key) {
+      case "createDate":
+        return new Date(item.createDate).getTime();
+      case "ticketType":
+        return item.ticketType;
+      case "command":
+        return item.command;
+      case "quantity":
+        return item.quantity;
+      case "pricePerUnit":
+        return item.pricePerUnit;
+      case "totalPrice":
+        return item.totalPrice;
+      case "unrealize":
+        return unrealizeOf(item, goldPrices) ?? 0;
+      case "dueDate":
+        return new Date(getDueDate(item)).getTime();
+      default:
+        return "";
+    }
+  }
+
+  const sortedItems = useMemo(
+    () => sortItems(items, sort, getSortKey),
+    // getSortKey closes over goldPrices, so re-sort when those change too.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [items, sort, goldPrices]
+  );
+
   const allSelected =
     items.length > 0 && items.every((i) => selectedIds.has(i.ticketCode));
 
@@ -530,20 +573,57 @@ function TicketSection({
                     aria-label="Select all rows in this section"
                   />
                 </TableHead>
-                <TableHead>วันที่/เวลา</TableHead>
-              <TableHead className="hidden md:table-cell">BY</TableHead>
-              <TableHead>คำสั่ง</TableHead>
-              <TableHead className="text-right">จำนวน</TableHead>
-              <TableHead className="text-right">ราคา</TableHead>
-              <TableHead className="hidden md:table-cell text-right">
-                TOTAL
-              </TableHead>
-              <TableHead className="hidden md:table-cell text-right">
-                UNREALIZE
-              </TableHead>
-              <TableHead className="hidden md:table-cell text-center">
-                วันครบดีล
-              </TableHead>
+                <SortableHead columnKey="createDate" state={sort} onSort={handleSort}>
+                  วันที่/เวลา
+                </SortableHead>
+                <SortableHead
+                  columnKey="ticketType"
+                  state={sort}
+                  onSort={handleSort}
+                  className="hidden md:table-cell">
+                  BY
+                </SortableHead>
+                <SortableHead columnKey="command" state={sort} onSort={handleSort}>
+                  คำสั่ง
+                </SortableHead>
+                <SortableHead
+                  columnKey="quantity"
+                  state={sort}
+                  onSort={handleSort}
+                  align="right">
+                  จำนวน
+                </SortableHead>
+                <SortableHead
+                  columnKey="pricePerUnit"
+                  state={sort}
+                  onSort={handleSort}
+                  align="right">
+                  ราคา
+                </SortableHead>
+                <SortableHead
+                  columnKey="totalPrice"
+                  state={sort}
+                  onSort={handleSort}
+                  align="right"
+                  className="hidden md:table-cell">
+                  TOTAL
+                </SortableHead>
+                <SortableHead
+                  columnKey="unrealize"
+                  state={sort}
+                  onSort={handleSort}
+                  align="right"
+                  className="hidden md:table-cell">
+                  UNREALIZE
+                </SortableHead>
+                <SortableHead
+                  columnKey="dueDate"
+                  state={sort}
+                  onSort={handleSort}
+                  align="center"
+                  className="hidden md:table-cell">
+                  วันครบดีล
+                </SortableHead>
               </TableRow>
             </TableHeader>
 
@@ -568,7 +648,7 @@ function TicketSection({
                 </TableRow>
               )}
               {!loading &&
-                items.map((item) => {
+                sortedItems.map((item) => {
                   const isSelected = selectedIds.has(item.ticketCode);
                   const isCommitted = committedSelection.has(item.ticketCode);
                   const u = unrealizeOf(item, goldPrices);

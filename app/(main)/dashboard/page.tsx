@@ -84,7 +84,7 @@ export default function DashboardPage() {
             <div className="text-center text-red-500">Sell</div>
           </div>
 
-          <div className="grid grid-cols-3 py-3 md:py-4 border-b text-xs md:text-sm">
+          <div className="grid grid-cols-3 py-3 md:py-4 border-b text-sm md:text-base">
             <div className="text-blue-600">99.99%</div>
             <div className="text-center">
               {fmt(margin?.canSell9999)}
@@ -96,7 +96,7 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-3 py-3 md:py-4 text-xs md:text-sm">
+          <div className="grid grid-cols-3 py-3 md:py-4 text-sm md:text-base">
             <div className="text-blue-600">96.50%</div>
             <div className="text-center">
               {fmt(margin?.canSell9650)}

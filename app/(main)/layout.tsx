@@ -33,6 +33,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <div className="flex-1 overflow-auto pb-20 md:pb-0">{children}</div>
       </div>
       <BottomNav />
+
+      {/* Version stamp — tablet+ only */}
+      <span className="hidden md:block fixed bottom-2 right-3 text-xs text-gray-200 pointer-events-none select-none z-10">
+        G statement v1.0.0
+      </span>
     </div>
   );
 }

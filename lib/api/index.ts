@@ -4,7 +4,6 @@ export * from "./types";
 export * from "./auth-storage";
 export * from "./services/auth.service";
 export * from "./services/customer.service";
-export * from "./services/dashboard.service";
 export * from "./services/gold.service";
 export * from "./services/trade.service";
 export * from "./services/portfolio.service";

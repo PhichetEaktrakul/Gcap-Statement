@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Inbox } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -34,6 +34,13 @@ import {
 import { parseDdMmYyyy } from "@/lib/date";
 import DateField from "@/components/date-field";
 import DateTimeCell from "@/components/datetime-cell";
+import {
+  NO_SORT,
+  SortableHead,
+  nextSortState,
+  sortItems,
+  type SortState,
+} from "@/components/sortable-head";
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50] as const;
 const DEFAULT_PAGE_SIZE = 10;
@@ -90,6 +97,32 @@ export default function HistoryPage() {
   const [appliedFilters, setAppliedFilters] = useState<Filters>(initialFilters);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState<number>(DEFAULT_PAGE_SIZE);
+  const [sort, setSort] = useState<SortState>(NO_SORT);
+
+  function handleSort(key: string) {
+    setSort((s) => nextSortState(s, key));
+  }
+
+  function getSortKey(item: TicketHistoryItem, key: string): string | number {
+    switch (key) {
+      case "createDate":
+        return new Date(item.createDate).getTime();
+      case "ticketType":
+        return item.ticketType;
+      case "command":
+        return item.command;
+      case "asset":
+        return item.asset;
+      case "quantity":
+        return item.quantity;
+      case "pricePerUnit":
+        return item.pricePerUnit;
+      case "totalPrice":
+        return item.totalPrice;
+      default:
+        return "";
+    }
+  }
   const [items, setItems] = useState<TicketHistoryItem[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
@@ -149,6 +182,11 @@ export default function HistoryPage() {
     setSelected(item);
     setDrawerOpen(true);
   }
+
+  const sortedItems = useMemo(
+    () => sortItems(items, sort, getSortKey),
+    [items, sort]
+  );
 
   const start = totalCount === 0 ? 0 : (page - 1) * pageSize + 1;
   const end = Math.min(page * pageSize, totalCount);
@@ -228,15 +266,43 @@ export default function HistoryPage() {
               <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>วันที่/เวลา</TableHead>
-                  <TableHead className="hidden md:table-cell">
+                  <SortableHead columnKey="createDate" state={sort} onSort={handleSort}>
+                    วันที่/เวลา
+                  </SortableHead>
+                  <SortableHead
+                    columnKey="ticketType"
+                    state={sort}
+                    onSort={handleSort}
+                    className="hidden md:table-cell">
                     ช่องทาง
-                  </TableHead>
-                  <TableHead>คำสั่ง</TableHead>
-                  <TableHead>ทรัพย์สิน</TableHead>
-                  <TableHead className="text-right">จำนวน</TableHead>
-                  <TableHead className="text-right">ราคา</TableHead>
-                  <TableHead className="text-right">รวม</TableHead>
+                  </SortableHead>
+                  <SortableHead columnKey="command" state={sort} onSort={handleSort}>
+                    คำสั่ง
+                  </SortableHead>
+                  <SortableHead columnKey="asset" state={sort} onSort={handleSort}>
+                    ทรัพย์สิน
+                  </SortableHead>
+                  <SortableHead
+                    columnKey="quantity"
+                    state={sort}
+                    onSort={handleSort}
+                    align="right">
+                    จำนวน
+                  </SortableHead>
+                  <SortableHead
+                    columnKey="pricePerUnit"
+                    state={sort}
+                    onSort={handleSort}
+                    align="right">
+                    ราคา
+                  </SortableHead>
+                  <SortableHead
+                    columnKey="totalPrice"
+                    state={sort}
+                    onSort={handleSort}
+                    align="right">
+                    รวม
+                  </SortableHead>
                 </TableRow>
               </TableHeader>
 
@@ -261,7 +327,7 @@ export default function HistoryPage() {
                   </TableRow>
                 )}
                 {!loading &&
-                  items.map((item) => (
+                  sortedItems.map((item) => (
                     <TableRow
                       key={item.ticketCode}
                       className="cursor-pointer hover:bg-gray-50 transition"

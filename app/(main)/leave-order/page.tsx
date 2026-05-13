@@ -33,6 +33,13 @@ import {
 import { dateToDdMmYyyy, parseDdMmYyyy } from "@/lib/date";
 import DateField from "@/components/date-field";
 import DateTimeCell from "@/components/datetime-cell";
+import {
+  NO_SORT,
+  SortableHead,
+  nextSortState,
+  sortItems,
+  type SortState,
+} from "@/components/sortable-head";
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50] as const;
 const DEFAULT_PAGE_SIZE = 10;
@@ -161,6 +168,30 @@ export default function LeaveOrderPage() {
     useState<Filters>(buildInitialFilters);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState<number>(DEFAULT_PAGE_SIZE);
+  const [sort, setSort] = useState<SortState>(NO_SORT);
+
+  function handleSort(key: string) {
+    setSort((s) => nextSortState(s, key));
+  }
+
+  function getSortKey(item: LeaveOrderItem, key: string): string | number {
+    switch (key) {
+      case "createDate":
+        return new Date(item.createDate).getTime();
+      case "command":
+        return item.command;
+      case "asset":
+        return item.asset;
+      case "quantity":
+        return item.quantity;
+      case "pricePerUnit":
+        return item.pricePerUnit;
+      case "statusText":
+        return item.statusText;
+      default:
+        return "";
+    }
+  }
   const [selected, setSelected] = useState<LeaveOrderItem | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
@@ -216,7 +247,12 @@ export default function LeaveOrderPage() {
     });
   }, [allItems, appliedFilters]);
 
-  const totalCount = filtered.length;
+  const sorted = useMemo(
+    () => sortItems(filtered, sort, getSortKey),
+    [filtered, sort]
+  );
+
+  const totalCount = sorted.length;
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
 
   // Clamp page if filters shrink the result set below current page.
@@ -224,7 +260,7 @@ export default function LeaveOrderPage() {
     if (page > totalPages) setPage(totalPages);
   }, [page, totalPages]);
 
-  const pageItems = filtered.slice((page - 1) * pageSize, page * pageSize);
+  const pageItems = sorted.slice((page - 1) * pageSize, page * pageSize);
   const start = totalCount === 0 ? 0 : (page - 1) * pageSize + 1;
   const end = Math.min(page * pageSize, totalCount);
 
@@ -320,12 +356,36 @@ export default function LeaveOrderPage() {
               <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>วันที่</TableHead>
-                  <TableHead>คำสั่ง</TableHead>
-                  <TableHead>ทรัพย์สิน</TableHead>
-                  <TableHead className="text-right">จำนวน</TableHead>
-                  <TableHead className="text-right">ราคาตั้ง</TableHead>
-                  <TableHead className="text-center">สถานะ</TableHead>
+                  <SortableHead columnKey="createDate" state={sort} onSort={handleSort}>
+                    วันที่
+                  </SortableHead>
+                  <SortableHead columnKey="command" state={sort} onSort={handleSort}>
+                    คำสั่ง
+                  </SortableHead>
+                  <SortableHead columnKey="asset" state={sort} onSort={handleSort}>
+                    ทรัพย์สิน
+                  </SortableHead>
+                  <SortableHead
+                    columnKey="quantity"
+                    state={sort}
+                    onSort={handleSort}
+                    align="right">
+                    จำนวน
+                  </SortableHead>
+                  <SortableHead
+                    columnKey="pricePerUnit"
+                    state={sort}
+                    onSort={handleSort}
+                    align="right">
+                    ราคาตั้ง
+                  </SortableHead>
+                  <SortableHead
+                    columnKey="statusText"
+                    state={sort}
+                    onSort={handleSort}
+                    align="center">
+                    สถานะ
+                  </SortableHead>
                 </TableRow>
               </TableHeader>
 
