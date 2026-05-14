@@ -1,6 +1,8 @@
 "use client";
+
 import ProfilePopover from "./profile-popover";
-import CatLogo from "./cat-logo";
+import Gcaplogo from "@/assets/logo_gcapgold.png";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 
 export default function Topbar() {
@@ -33,7 +35,7 @@ export default function Topbar() {
       {/* MOBILE topbar */}
       <div className="md:hidden h-16 bg-[#0b1a3a] border-b border-white/10 flex items-center justify-between px-4 shrink-0 text-white">
         <div className="bg-white rounded-lg p-1 flex items-center justify-center">
-          <CatLogo size={28} />
+          <Image src={Gcaplogo} alt="GCAP Logo" className="size-9" />
         </div>
         <div className="flex items-center gap-3">
           <div className="bg-green-500/10 text-green-400 px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap">
@@ -47,7 +49,7 @@ export default function Topbar() {
       <div className="hidden md:flex h-16 bg-[#0b1a3a] border-b border-white/10 items-center justify-between px-6 text-white shrink-0">
         <div className="flex items-center gap-3">
           <div className="bg-white rounded-lg p-1 flex items-center justify-center">
-            <CatLogo size={32} />
+            <Image src={Gcaplogo} alt="GCAP Logo" className="size-10" />
           </div>
           <div className="bg-green-500/10 text-green-400 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap">
             {time}

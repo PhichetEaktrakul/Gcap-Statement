@@ -10,12 +10,11 @@ import {
 } from "@microsoft/signalr";
 import { getAccessToken, setAccessToken } from "@/lib/api/client";
 
-const HUB_URL =
-  process.env.NEXT_PUBLIC_SIGNALR_HUB_URL ?? "/hubs/app";
+const HUB_URL = process.env.NEXT_PUBLIC_SIGNALR_HUB_URL ?? "";
 
 type ForceLogoutPayload = { reason?: string };
 
-// Opens a single SignalR connection to /hubs/app and listens for the server's
+// Opens a single SignalR connection to {HUB_URL} and listens for the server's
 // ForceLogout event (used to kick the previous session when the user signs in
 // from another device). Cleans up the connection on unmount.
 export function useSessionHub() {
@@ -36,8 +35,7 @@ export function useSessionHub() {
         .build();
 
       conn.on("ForceLogout", (data: ForceLogoutPayload) => {
-        const reason =
-          data?.reason ?? "บัญชีของคุณถูกใช้งานจากอุปกรณ์อื่น";
+        const reason = data?.reason ?? "บัญชีของคุณถูกใช้งานจากอุปกรณ์อื่น";
         setAccessToken(null);
         toast.warning(reason);
         router.replace("/login");
@@ -51,7 +49,6 @@ export function useSessionHub() {
         }
         connection = conn;
       } catch (err) {
-        // Realtime is best-effort — never break the page on connection failure.
         console.warn("SignalR connection failed:", err);
       }
     })();

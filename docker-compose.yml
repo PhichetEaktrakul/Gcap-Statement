@@ -1,0 +1,11 @@
+services:
+  gcap-statement:
+    image: ${REGISTRY}/gcap-statement:${TAG}
+    container_name: gcap-statement
+
+    ports:
+      - "${SERVER_PORT}:3000"
+
+    environment:
+      NODE_ENV: production
+      

@@ -4,9 +4,8 @@ import axios, {
   InternalAxiosRequestConfig,
 } from "axios";
 
-const baseURL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "/api";
-const priceURL =
-  process.env.NEXT_PUBLIC_PRICE_BASE_URL ?? "http://localhost:8080";
+const baseURL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
+const priceURL = process.env.NEXT_PUBLIC_PRICE_BASE_URL ?? "http://localhost:8080";
 
 export const apiClient: AxiosInstance = axios.create({
   baseURL,
@@ -51,7 +50,8 @@ apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const headers = config.headers;
     const alreadyAuthed =
-      headers && (headers.has?.("Authorization") || !!(headers as any).Authorization);
+      headers &&
+      (headers.has?.("Authorization") || !!(headers as any).Authorization);
     if (!alreadyAuthed) {
       const token = getAccessToken();
       if (token && headers) {
@@ -60,7 +60,7 @@ apiClient.interceptors.request.use(
     }
     return config;
   },
-  (error: AxiosError) => Promise.reject(error)
+  (error: AxiosError) => Promise.reject(error),
 );
 
 // Refresh-token plumbing — single in-flight refresh, queued retries.
@@ -80,7 +80,7 @@ function performRefresh(): Promise<string> {
       {
         withCredentials: true,
         headers: { "Content-Type": "application/json" },
-      }
+      },
     )
     .then((res) => {
       const token = res.data?.data?.token;
@@ -131,5 +131,5 @@ apiClient.interceptors.response.use(
       }
       return Promise.reject(refreshErr);
     }
-  }
+  },
 );

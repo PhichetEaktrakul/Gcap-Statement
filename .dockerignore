@@ -1,0 +1,38 @@
+.git
+.gitignore
+.gitattributes
+
+# build artifacts
+node_modules
+.next
+.next/**
+out
+build
+dist
+*.tsbuildinfo
+next-env.d.ts
+
+# local config / secrets — pass via --build-arg or --env-file instead
+.env
+.env*
+!.env.production
+.env.local
+.env.*.local
+
+# editor / OS
+.vscode
+.idea
+.DS_Store
+
+# misc
+README.md
+Dockerfile
+.dockerignore
+coverage
+.pnpm-debug.log*
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
+.vercel
+.cache
