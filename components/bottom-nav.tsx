@@ -37,7 +37,7 @@ export default function BottomNav() {
               }`}
               aria-current={active ? "page" : undefined}>
               {active && (
-                <span className="absolute top-0 inset-x-5 h-0.5 rounded-full bg-gradient-to-r from-[#153DA3] to-[#23E8AD]" />
+                <span className="absolute top-0 inset-x-5 h-0.5 rounded-full bg-linear-to-r from-[#c7ae86] to-[#ffdfab]" />
               )}
               <Icon className="w-5 h-5" />
               <span>{item.name}</span>

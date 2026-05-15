@@ -88,6 +88,12 @@
   --gold-400: #d9b868;
   --gold-200: #eddfb5;
   --gold-50: #f8f2dc;
+  
+  /* custom colors */
+  --tgold-solid: #c7ae86;
+  --tgold-soft: #ffdfab;
+  --tblue-main: #0b1a3a;
+
 
   /* override shadcn primary */
   --primary: #0b1a3a;

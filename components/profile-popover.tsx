@@ -84,18 +84,11 @@ export default function ProfilePopover() {
       ? `${profile.firstName} ${profile.lastName}`.trim()
       : null;
 
-  const branchAccount = profile
-    ? [profile.bankAccount.bankBranch, profile.bankAccount.accountName]
-        .map((s) => s?.trim())
-        .filter(Boolean)
-        .join(" / ")
-    : "";
-
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <button
-          className="px-3 py-1.5 rounded-full bg-gradient-to-r from-[#153DA3] to-[#23E8AD] text-white text-sm font-semibold transition-opacity hover:opacity-90 min-w-[64px] text-center"
+          className="px-3 py-1.5 rounded-full bg-[#c7ae86]/15 text-[#ffdfab] text-sm font-semibold transition-opacity hover:opacity-90 min-w-[64px] text-center cursor-pointer"
           aria-label="Open profile menu">
           {profile?.customerCode ?? (loadedOnce ? "—" : "...")}
         </button>
@@ -121,7 +114,6 @@ export default function ProfilePopover() {
             <div className="text-xs font-semibold text-gray-500 tracking-wide">
               ข้อมูลลูกค้า
             </div>
-            <Row label="หมายเลขบัตร" value={profile?.cardNumber} />
             <Row label="เบอร์โทรศัพท์" value={profile?.mobileNumber} />
           </div>
 
@@ -133,7 +125,8 @@ export default function ProfilePopover() {
               บัญชีธนาคาร
             </div>
             <Row label="ธนาคาร" value={profile?.bankAccount.bankName} />
-            <Row label="สาขา / ชื่อบัญชี" value={branchAccount} />
+            <Row label="สาขา" value={profile?.bankAccount.bankBranch} />
+            <Row label="ชื่อบัญชี" value={profile?.bankAccount.accountName} />
             <Row
               label="เลขที่บัญชี"
               value={profile?.bankAccount.maskedAccountNumber}

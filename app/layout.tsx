@@ -6,6 +6,19 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "GStatement",
   description: "GStatement by Nextjs",
+  robots: {
+    index: false,
+    follow: false,
+    nocache: true,
+    googleBot: {
+      index: false,
+      follow: false,
+      noimageindex: true,
+    },
+  },
+  other: {
+    robots: "noai, noimageai",
+  },
 };
 
 export default function RootLayout({

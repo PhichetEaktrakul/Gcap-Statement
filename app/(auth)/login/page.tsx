@@ -14,6 +14,7 @@ import { registrationStorage } from "@/lib/api/auth-storage";
 import { Step1Form, Step2Form, Step3Form } from "@/components/auth-steps";
 import Gcaplogo from "@/assets/logo_gcapgold.png";
 import Image from "next/image";
+import InfoAlert from "@/components/info-alert";
 
 type View = "login" | "register" | "forgot";
 
@@ -137,10 +138,10 @@ export default function AuthPage() {
     try {
       await authService.setPassword(
         { newPassword, confirmPassword },
-        stage2Token
+        stage2Token,
       );
       toast.success(
-        view === "forgot" ? "เปลี่ยนรหัสผ่านสำเร็จ" : "สร้างผู้ใช้งานสำเร็จ"
+        view === "forgot" ? "เปลี่ยนรหัสผ่านสำเร็จ" : "สร้างผู้ใช้งานสำเร็จ",
       );
       backToLogin();
     } catch (err) {
@@ -151,16 +152,18 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#153DA3] to-[#23E8AD] p-4">
+    <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-[#052460] to-[#004c71] p-4">
       <Card className="w-full max-w-md rounded-2xl shadow-2xl bg-white backdrop-blur">
         <CardContent className="p-8">
           {/* LOGO HEADER */}
           <div className="flex flex-col items-center gap-2 mb-6">
-            <div className="bg-white rounded-xl p-2 ring-1 ring-gray-200 shadow-sm">
+            <div className="bg-white rounded-xl p-2 ring-1 ring-gray-200 shadow-sm mb-3">
               <Image src={Gcaplogo} alt="GCAP Logo" className="size-18" />
             </div>
-            <div className="text-xs uppercase tracking-[0.2em] text-gray-500 font-medium">
-              statement
+            <div className="text-md uppercase tracking-widest text-gray-700 font-bold text-center">
+              ระบบตรวจสอบรายการคงค้าง
+              <br />
+              สำหรับการซื้อขายทางโทรศัพท์
             </div>
           </div>
 
@@ -258,6 +261,7 @@ export default function AuthPage() {
                     className="block mx-auto text-xs text-gray-600 underline hover:text-gray-900 mt-2">
                     Forgot Password
                   </button>
+                  <InfoAlert />
                 </form>
               </TabsContent>
 
@@ -293,6 +297,7 @@ export default function AuthPage() {
                     onConfirm={handleSetPassword}
                   />
                 )}
+                <InfoAlert />
               </TabsContent>
             </Tabs>
           )}

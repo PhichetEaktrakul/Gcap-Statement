@@ -79,9 +79,9 @@ export default function DashboardPage() {
       <Card className="rounded-xl">
         <CardContent className="p-4 md:p-5">
           <div className="grid grid-cols-3 text-xs md:text-sm text-gray-500 pb-3 border-b">
-            <div>ปริมาณที่ซื้อ-ขายได้</div>
-            <div className="text-center text-green-600">Buy</div>
-            <div className="text-center text-red-500">Sell</div>
+            <div>ปริมาณที่ลูกค้าทำเพิ่มได้</div>
+            <div className="text-center text-green-600">ซื้อได้</div>
+            <div className="text-center text-red-500">ขายได้</div>
           </div>
 
           <div className="grid grid-cols-3 py-3 md:py-4 border-b text-sm md:text-base">

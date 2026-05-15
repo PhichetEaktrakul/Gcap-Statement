@@ -38,7 +38,7 @@ export default function Topbar() {
           <Image src={Gcaplogo} alt="GCAP Logo" className="size-9" />
         </div>
         <div className="flex items-center gap-3">
-          <div className="bg-green-500/10 text-green-400 px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap">
+          <div className="bg-[#c7ae86]/15 text-[#ffdfab] px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap">
             {time}
           </div>
           <ProfilePopover />
@@ -49,9 +49,9 @@ export default function Topbar() {
       <div className="hidden md:flex h-16 bg-[#0b1a3a] border-b border-white/10 items-center justify-between px-6 text-white shrink-0">
         <div className="flex items-center gap-3">
           <div className="bg-white rounded-lg p-1 flex items-center justify-center">
-            <Image src={Gcaplogo} alt="GCAP Logo" className="size-10" />
+            <Image src={Gcaplogo} alt="GCAP Logo" className="size-9" />
           </div>
-          <div className="bg-green-500/10 text-green-400 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap">
+          <div className="bg-[#c7ae86]/15 text-[#ffdfab] px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap">
             {time}
           </div>
         </div>

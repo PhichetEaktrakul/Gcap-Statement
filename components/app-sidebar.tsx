@@ -39,8 +39,8 @@ export default function AppSidebar() {
           collapsed ? "justify-center" : "justify-between"
         }`}>
         {!collapsed && (
-          <div className="font-bold">
-            GCAP <span className="text-sm text-gray-300">STATEMENT</span>
+          <div className="font-bold text-[0.9rem]">
+            GCAP GOLD <span className="text-[0.75rem] text-gray-300">STATEMENT</span>
           </div>
         )}
 
@@ -72,7 +72,7 @@ export default function AppSidebar() {
                     ${collapsed ? "justify-center gap-0" : ""}
                     ${
                       active
-                        ? "bg-gradient-to-r from-[#153DA3] to-[#23E8AD]"
+                        ? "bg-linear-to-r from-[#c7ae86] to-[#ffdfab]"
                         : "text-gray-300 hover:bg-white/10"
                     }
                   `}>

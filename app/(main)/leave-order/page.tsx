@@ -102,7 +102,7 @@ function StatusIcon({ status, size = 24 }: { status: string; size?: number }) {
         viewBox="0 0 24 24"
         fill="none"
         role="img"
-        aria-label="Pending">
+        aria-label="Waiting">
         <circle cx="12" cy="12" r="10" fill="#3B82F6" />
         <path
           d="M12 7V12L15 14"
@@ -197,22 +197,29 @@ export default function LeaveOrderPage() {
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
-    tradeService
-      .getLeaveOrders()
-      .then((res) => {
-        if (cancelled) return;
-        setAllItems(res.data);
-      })
-      .catch(() => {
-        if (cancelled) return;
-        setAllItems([]);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
+
+    function load(showLoading: boolean) {
+      if (showLoading) setLoading(true);
+      tradeService
+        .getLeaveOrders()
+        .then((res) => {
+          if (cancelled) return;
+          setAllItems(res.data);
+        })
+        .catch(() => {
+          if (cancelled) return;
+          if (showLoading) setAllItems([]);
+        })
+        .finally(() => {
+          if (!cancelled && showLoading) setLoading(false);
+        });
+    }
+
+    load(true);
+    const intervalId = setInterval(() => load(false), 5 * 60 * 1000);
     return () => {
       cancelled = true;
+      clearInterval(intervalId);
     };
   }, []);
 
@@ -322,7 +329,7 @@ export default function LeaveOrderPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">สถานะ</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="pending">Waiting</SelectItem>
                   <SelectItem value="complete">Complete</SelectItem>
                   <SelectItem value="cancelled">Cancelled</SelectItem>
                   <SelectItem value="other">Other</SelectItem>
@@ -469,7 +476,7 @@ export default function LeaveOrderPage() {
             {/* STATUS LEGEND */}
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 md:px-5 pb-4 text-xs text-gray-600">
               <span className="flex items-center gap-1.5">
-                <StatusIcon status="pending" size={18} /> Pending
+                <StatusIcon status="pending" size={18} /> Waiting
               </span>
               <span className="flex items-center gap-1.5">
                 <StatusIcon status="complete" size={18} /> Complete
@@ -644,7 +651,10 @@ function LeaveOrderDrawer({
               )}`}
             />
             <Row label="ราคาตั้ง" value={fmtNumber(item.pricePerUnit)} />
-            <Row label="สถานะ" value={statusLabel(item.statusText)} />
+            <Row
+              label="สถานะ"
+              value={item.statusText === "pending" ? "Waiting" : item.statusText}
+            />
           </div>
         </div>
       </SheetContent>
