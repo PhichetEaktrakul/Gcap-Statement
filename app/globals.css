@@ -81,26 +81,32 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
-  --navy-900: #0b1a3a;
-  --navy-800: #132a55;
+  --navy-900: #052460;
+  --navy-800: #004c71;
 
   --gold-500: #c9a24a;
   --gold-400: #d9b868;
   --gold-200: #eddfb5;
   --gold-50: #f8f2dc;
-  
-  /* custom colors */
-  --tgold-solid: #c7ae86;
-  --tgold-soft: #ffdfab;
-  --tblue-main: #0b1a3a;
 
+  /* brand palette */
+  --tblue-main: #052460;   /* main */
+  --tblue-light: #0a3a8c;  /* lighter shade of main navy — for gradients */
+  --tblue-dark: #021539;   /* darker shade of main navy — for gradients */
+  --tgold-solid: #c7ae86;  /* main */
+  --tgold-soft: #ffdfab;   /* sub */
+  --tblue-sub: #004c71;    /* sub */
+  --tbeige: #d6ccba;       /* sub */
+  --tgray-light: #e6e7e8;  /* sub */
+  --tgray-dark: #414042;   /* sub — base text */
 
-  /* override shadcn primary */
-  --primary: #0b1a3a;
+  /* override shadcn tokens */
+  --foreground: #414042;
+  --primary: #052460;
   --primary-foreground: #ffffff;
 
-  --accent: #f8f2dc;
-  --accent-foreground: #0b1a3a;
+  --accent: #d6ccba;
+  --accent-foreground: #052460;
 }
 
 .dark {

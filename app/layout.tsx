@@ -1,11 +1,34 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Toaster } from "sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "GStatement",
-  description: "GStatement by Nextjs",
+  applicationName: "GCall — Statement viewer for call customers",
+  title: {
+    default: "GCall",
+    template: "%s | GCall",
+  },
+  description:
+    "Monitor your portfolio, view tickets and leave orders with real-time gold prices (For Call Customers Only).",
+  keywords: [
+    "GStatement",
+    "GCall",
+    "Gold",
+    "Portfolio",
+    "Call Ticket",
+    "GCAP GOLD",
+  ],
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
+  appleWebApp: {
+    capable: true,
+    title: "GCall",
+    statusBarStyle: "default",
+  },
   robots: {
     index: false,
     follow: false,
@@ -19,6 +42,12 @@ export const metadata: Metadata = {
   other: {
     robots: "noai, noimageai",
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#1959A3",
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({

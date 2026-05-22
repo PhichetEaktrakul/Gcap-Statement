@@ -1,5 +1,6 @@
 export * from "./client";
 export * from "./endpoints";
+export * from "./errors";
 export * from "./types";
 export * from "./auth-storage";
 export * from "./services/auth.service";

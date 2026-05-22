@@ -1,5 +1,6 @@
 import { priceClient } from "../client";
 import { ENDPOINTS } from "../endpoints";
+import type { ApiResponse } from "../types";
 
 export type GoldLatest = {
   id: number;
@@ -15,8 +16,8 @@ export type GoldLatest = {
 };
 
 export const goldService = {
-  // Hits the priceClient (separate base URL, e.g. http://localhost:8080).
-  // Response is the raw object — not wrapped in the standard ApiResponse envelope.
   getLatest: () =>
-    priceClient.get<GoldLatest>(ENDPOINTS.gold.latest).then((r) => r.data),
+    priceClient
+      .get<ApiResponse<GoldLatest>>(ENDPOINTS.gold.latest)
+      .then((r) => r.data.data),
 };

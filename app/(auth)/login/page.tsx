@@ -11,20 +11,14 @@ import { Label } from "@/components/ui/label";
 import { authService } from "@/lib/api/services/auth.service";
 import { getAccessToken, setAccessToken } from "@/lib/api/client";
 import { registrationStorage } from "@/lib/api/auth-storage";
+import { getErrorMessage } from "@/lib/api/errors";
 import { Step1Form, Step2Form, Step3Form } from "@/components/auth-steps";
+import TermsAgreementDialog from "@/components/terms-agreement-dialog";
 import Gcaplogo from "@/assets/logo_gcapgold.png";
 import Image from "next/image";
 import InfoAlert from "@/components/info-alert";
 
 type View = "login" | "register" | "forgot";
-
-function getErrorMessage(err: unknown, fallback: string): string {
-  const e = err as {
-    response?: { data?: { message?: string } };
-    message?: string;
-  };
-  return e?.response?.data?.message ?? e?.message ?? fallback;
-}
 
 export default function AuthPage() {
   const router = useRouter();
@@ -34,6 +28,7 @@ export default function AuthPage() {
   const [loginCode, setLoginCode] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [loginLoading, setLoginLoading] = useState(false);
+  const [termsOpen, setTermsOpen] = useState(false);
 
   const [regCode, setRegCode] = useState("");
   const [regPhone, setRegPhone] = useState("");
@@ -67,9 +62,14 @@ export default function AuthPage() {
     setView("login");
   }
 
-  async function handleLogin(e: React.FormEvent) {
+  function handleLogin(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!loginCode || !loginPassword) return;
+    // Require the user to accept the terms before logging in.
+    setTermsOpen(true);
+  }
+
+  async function confirmLogin() {
     setLoginLoading(true);
     try {
       const res = await authService.login({
@@ -77,6 +77,7 @@ export default function AuthPage() {
         password: loginPassword,
       });
       setAccessToken(res.data.token);
+      setTermsOpen(false);
       toast.success("เข้าสู่ระบบสำเร็จ");
       router.push("/dashboard");
     } catch (err) {
@@ -152,7 +153,7 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-[#052460] to-[#004c71] p-4">
+    <div className="min-h-screen flex items-center justify-center bg-linear-to-tl from-[#0a3a8c] via-[#052460] to-[#021539] p-4">
       <Card className="w-full max-w-md rounded-2xl shadow-2xl bg-white backdrop-blur">
         <CardContent className="p-8">
           {/* LOGO HEADER */}
@@ -224,10 +225,11 @@ export default function AuthPage() {
               <TabsContent value="login">
                 <form className="space-y-4" onSubmit={handleLogin}>
                   <div className="space-y-2">
-                    <Label>Code</Label>
+                    <Label>Customer Code</Label>
                     <Input
                       type="text"
                       autoComplete="username"
+                      placeholder="Enter your code"
                       value={loginCode}
                       onChange={(e) => setLoginCode(e.target.value)}
                       required
@@ -239,6 +241,7 @@ export default function AuthPage() {
                     <Input
                       type="password"
                       autoComplete="current-password"
+                      placeholder="Enter your password"
                       value={loginPassword}
                       onChange={(e) => setLoginPassword(e.target.value)}
                       required
@@ -303,6 +306,15 @@ export default function AuthPage() {
           )}
         </CardContent>
       </Card>
+
+      <TermsAgreementDialog
+        open={termsOpen}
+        onOpenChange={(o) => {
+          if (!loginLoading) setTermsOpen(o);
+        }}
+        loading={loginLoading}
+        onConfirm={confirmLogin}
+      />
     </div>
   );
 }

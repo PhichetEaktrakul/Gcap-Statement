@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ChevronDown, Inbox } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -81,23 +81,61 @@ function fmtDateTime(iso: string): string {
   return `${dd}/${mm}/${yy} ${hh}:${mi}`;
 }
 
-function fmtNumber(n: number): string {
+function fmtNumber(n: number, maxFraction = 2): string {
   return n.toLocaleString("en-US", {
     minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
+    maximumFractionDigits: maxFraction,
   });
 }
 
-function fmtPlainSigned(n: number): string {
-  if (n < 0) return `-${fmtNumber(Math.abs(n))}`;
-  return fmtNumber(n);
+function fmtPlainSigned(n: number, maxFraction = 2): string {
+  if (n < 0) return `-${fmtNumber(Math.abs(n), maxFraction)}`;
+  return fmtNumber(n, maxFraction);
 }
 
-function fmtSignedColored(n: number): { text: string; cls: string } {
-  if (n > 0) return { text: `+${fmtNumber(n)}`, cls: "text-green-600" };
-  if (n < 0) return { text: `-${fmtNumber(Math.abs(n))}`, cls: "text-red-500" };
-  return { text: fmtNumber(0), cls: "" };
+// Truncate toward zero at N decimals (1.019 → 1.01, never rounds up).
+// Pads to exactly N decimals (85150 → 85,150.00).
+function truncFmt(n: number, decimals: number): string {
+  const factor = 10 ** decimals;
+  const truncated = Math.trunc(n * factor) / factor;
+  return truncated.toLocaleString("en-US", {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  });
 }
+
+function fmtTruncSigned(n: number, decimals = 2): string {
+  if (n < 0) return `-${truncFmt(Math.abs(n), decimals)}`;
+  return truncFmt(n, decimals);
+}
+
+function fmtTruncColored(
+  n: number,
+  decimals = 2
+): { text: string; cls: string } {
+  if (n > 0) return { text: `+${truncFmt(n, decimals)}`, cls: "text-green-600" };
+  if (n < 0)
+    return { text: `-${truncFmt(Math.abs(n), decimals)}`, cls: "text-red-500" };
+  return { text: truncFmt(0, decimals), cls: "" };
+}
+
+// Truncate toward zero, then format with 0..maxDecimals fractional digits
+// (no padding). 1 → "1", 1.12345 → "1.12345", 1.1234567890 → "1.123456789".
+function truncFmtMax(n: number, maxDecimals: number): string {
+  const factor = 10 ** maxDecimals;
+  const truncated = Math.trunc(n * factor) / factor;
+  return truncated.toLocaleString("en-US", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: maxDecimals,
+  });
+}
+
+function fmtTruncSignedMax(n: number, maxDecimals: number): string {
+  if (n < 0) return `-${truncFmtMax(Math.abs(n), maxDecimals)}`;
+  return truncFmtMax(n, maxDecimals);
+}
+
+const qtyDecimalsForAsset = (asset: number) => (asset === 1 ? 9 : 5);
 
 const channelLabel = (t: string) => (t === "C" ? "Call" : "Leave Order");
 const purityLabel = (a: number) =>
@@ -105,7 +143,7 @@ const purityLabel = (a: number) =>
 const commandLabel = (c: number) =>
   c === 2 ? "ซื้อ" : c === 1 ? "ขาย" : "—";
 const qtyTypeLabel = (t: string) =>
-  t === "baht" ? "บาท" : t === "kg" ? "กิโล" : t;
+  t === "baht" ? "BAHT" : t === "kg" ? "KG" : t;
 
 function getDueDate(item: ActiveTicketItem): string {
   return item.dueDate ?? item.createDate;
@@ -149,21 +187,22 @@ export default function PortfolioPage() {
   const [drawerItem, setDrawerItem] = useState<ActiveTicketItem | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
+  const loadActiveTickets = useCallback(async () => {
     setLoading(true);
-    tradeService
-      .getActiveTickets()
-      .then((res) => {
-        if (!cancelled) setAllItems(res.data);
-      })
-      .catch(() => {
-        if (!cancelled) setAllItems([]);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
+    try {
+      const res = await tradeService.getActiveTickets();
+      setAllItems(res.data);
+    } catch {
+      setAllItems([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
+  useEffect(() => {
+    loadActiveTickets();
+
+    let cancelled = false;
     goldService
       .getLatest()
       .then((data: GoldLatest) => {
@@ -181,7 +220,7 @@ export default function PortfolioPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [loadActiveTickets]);
 
   const filtered = useMemo(() => {
     const fromIso = parseDdMmYyyy(appliedFilters.dateFrom);
@@ -234,14 +273,24 @@ export default function PortfolioPage() {
       (i) => !committedSelection.has(i.ticketCode)
     );
 
-    const qty96 =
-      checked96.length === 0
-        ? "--"
-        : fmtPlainSigned(sumSignedQty(checked96));
-    const qty99 =
-      checked99.length === 0
-        ? "--"
-        : fmtPlainSigned(sumSignedQty(checked99));
+    const sumQty96 = sumSignedQty(checked96);
+    const sumQty99 = sumSignedQty(checked99);
+    const sumTotal96 = checked96.reduce((s, i) => s + i.totalPrice, 0);
+    const sumTotal99 = checked99.reduce((s, i) => s + i.totalPrice, 0);
+
+    const qty96 = checked96.length === 0 ? "--" : fmtTruncSignedMax(sumQty96, 9);
+    const qty99 = checked99.length === 0 ? "--" : fmtTruncSignedMax(sumQty99, 9);
+    const qty96Cls = checked96.length > 0 && sumQty96 < 0 ? "text-red-500" : "";
+    const qty99Cls = checked99.length > 0 && sumQty99 < 0 ? "text-red-500" : "";
+
+    let mean96Text: string | undefined;
+    if (checked96.length > 0 && sumQty96 !== 0) {
+      mean96Text = fmtNumber(Math.abs(sumTotal96 / sumQty96));
+    }
+    let mean99Text: string | undefined;
+    if (checked99.length > 0 && sumQty99 !== 0) {
+      mean99Text = fmtNumber(Math.abs(sumTotal99 / (sumQty99 * 65.6)));
+    }
 
     // Total = sum of raw totalPrice for the CHECKED rows (no sign flipping —
     // API's natural sign is preserved). Negative => red.
@@ -250,7 +299,7 @@ export default function PortfolioPage() {
     if (allChecked.length > 0) {
       let sum = 0;
       for (const item of allChecked) sum += item.totalPrice;
-      totalText = fmtPlainSigned(sum);
+      totalText = fmtTruncSigned(sum, 2);
       totalCls = sum < 0 ? "text-red-500" : "";
     }
 
@@ -269,20 +318,78 @@ export default function PortfolioPage() {
         sum += u;
       }
       if (ok) {
-        const f = fmtSignedColored(sum);
+        const f = fmtTruncColored(sum, 2);
         unrText = f.text;
         unrCls = f.cls;
       }
     }
 
-    return { qty96, qty99, totalText, totalCls, unrText, unrCls };
+    // Gain/Loss = weighted-avg vs spot on CHECKED rows, summed across assets.
+    let gainLossText = "--";
+    let gainLossCls = "";
+    if (allChecked.length > 0 && goldPrices) {
+      let gain96 = 0;
+      if (checked96.length > 0) {
+        const sumTotal = checked96.reduce((s, i) => s + i.totalPrice, 0);
+        const sumQty = sumSignedQty(checked96);
+        if (sumQty !== 0) {
+          const mean = Math.abs(sumTotal / sumQty);
+          const spot = sumQty > 0 ? goldPrices.gold96_buy : goldPrices.gold96_sell;
+          gain96 = (spot - mean) * sumQty;
+        } else {
+          gain96 = sumTotal;
+        }
+      }
+      let gain99 = 0;
+      if (checked99.length > 0) {
+        const sumTotal = checked99.reduce((s, i) => s + i.totalPrice, 0);
+        const sumQty = sumSignedQty(checked99);
+        if (sumQty !== 0) {
+          const mean = Math.abs(sumTotal / (sumQty * 65.6));
+          const spot = sumQty > 0 ? goldPrices.gold99_buy : goldPrices.gold99_sell;
+          gain99 = Math.round((spot - mean) * sumQty * 65.6 * 100) / 100;
+        } else {
+          gain99 = sumTotal;
+        }
+      }
+      const combined = gain96 + gain99;
+      const f = fmtTruncColored(combined, 2);
+      gainLossText = f.text;
+      gainLossCls = f.cls;
+    }
+
+    return {
+      qty96,
+      qty99,
+      qty96Cls,
+      qty99Cls,
+      mean96Text,
+      mean99Text,
+      totalText,
+      totalCls,
+      unrText,
+      unrCls,
+      gainLossText,
+      gainLossCls,
+    };
   }, [items96, items99, committedSelection, goldPrices]);
 
   function handleSearch() {
     setAppliedFilters(filters);
+    loadActiveTickets();
   }
 
-  function handleCalculate() {
+  async function handleCalculate() {
+    try {
+      const data = await goldService.getLatest();
+      setGoldPrices({
+        gold99_buy: data.gold99_buy,
+        gold99_sell: data.gold99_sell,
+        gold96_buy: data.gold96_buy,
+        gold96_sell: data.gold96_sell,
+        updateTime: data.created_at,
+      });
+    } catch {}
     setCommittedSelection(new Set(selectedIds));
   }
 
@@ -327,10 +434,10 @@ export default function PortfolioPage() {
                     setFilters({ ...filters, command: v })
                   }>
                   <SelectTrigger className="w-full lg:w-[140px]">
-                    <SelectValue placeholder="All" />
+                    <SelectValue placeholder="ทั้งหมด" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All</SelectItem>
+                    <SelectItem value="all">ทั้งหมด</SelectItem>
                     <SelectItem value="2">ซื้อ</SelectItem>
                     <SelectItem value="1">ขาย</SelectItem>
                   </SelectContent>
@@ -357,7 +464,7 @@ export default function PortfolioPage() {
               </div>
 
               <Button
-                className="w-full lg:w-auto bg-blue-600 hover:bg-blue-700"
+                className="w-full lg:w-auto bg-[#1959A3] hover:bg-[#144a8a]"
                 onClick={handleSearch}>
                 ค้นหา
               </Button>
@@ -370,17 +477,32 @@ export default function PortfolioPage() {
           <CardContent>
             <div className="flex flex-col lg:flex-row lg:items-center gap-4 lg:justify-between">
               <div className="grid grid-cols-2 lg:flex lg:flex-wrap gap-2 md:gap-3 flex-1">
-                <StatCard label="QTY 96.50" value={stats.qty96} />
-                <StatCard label="QTY 99.99" value={stats.qty99} />
+                <StatCard
+                  label="QTY 96.50"
+                  value={stats.qty96}
+                  valueClass={stats.qty96Cls}
+                  subValue={stats.mean96Text}
+                />
+                <StatCard
+                  label="QTY 99.99"
+                  value={stats.qty99}
+                  valueClass={stats.qty99Cls}
+                  subValue={stats.mean99Text}
+                />
                 <StatCard label="Total" value={stats.totalText} valueClass={stats.totalCls} />
                 <StatCard
                   label="Unrealize P/L"
                   value={stats.unrText}
                   valueClass={stats.unrCls}
                 />
+                <StatCard
+                  label="Gain/Loss"
+                  value={stats.gainLossText}
+                  valueClass={stats.gainLossCls}
+                />
               </div>
               <Button
-                className="bg-blue-600 hover:bg-blue-700 w-full lg:w-auto"
+                className="bg-[#1959A3] hover:bg-[#144a8a] w-full lg:w-auto"
                 onClick={handleCalculate}>
                 คำนวน
               </Button>
@@ -402,6 +524,7 @@ export default function PortfolioPage() {
           onToggleSelect={toggleSelect}
           onSelectAllOnSection={() => selectAllOnSection(items96)}
           onOpen={openTicket}
+          qtyMaxDecimals={5}
         />
 
         {/* TICKET 99.99% */}
@@ -418,6 +541,7 @@ export default function PortfolioPage() {
           onToggleSelect={toggleSelect}
           onSelectAllOnSection={() => selectAllOnSection(items99)}
           onOpen={openTicket}
+          qtyMaxDecimals={9}
         />
       </div>
 
@@ -435,18 +559,21 @@ function StatCard({
   label,
   value,
   valueClass = "",
+  subValue,
 }: {
   label: string;
   value: string;
   valueClass?: string;
+  subValue?: string;
 }) {
   return (
     <div className="bg-gray-50 rounded-xl px-3 md:px-4 py-2 md:py-3 min-w-0 lg:min-w-[150px]">
-      <div className="text-[11px] md:text-xs text-gray-500 leading-tight">
-        {label}
+      <div className="flex items-baseline justify-between gap-2 text-[11px] md:text-xs text-gray-500 leading-tight">
+        <span>{label}</span>
+        {subValue && <span>({subValue})</span>}
       </div>
       <div
-        className={`font-semibold text-base md:text-lg lg:text-xl mt-0.5 md:mt-1 truncate ${valueClass}`}>
+        className={`font-semibold text-base md:text-lg lg:text-xl mt-0.5 md:mt-1 truncate text-right ${valueClass}`}>
         {value}
       </div>
     </div>
@@ -466,6 +593,7 @@ function TicketSection({
   onToggleSelect,
   onSelectAllOnSection,
   onOpen,
+  qtyMaxDecimals,
 }: {
   title: string;
   loading: boolean;
@@ -479,6 +607,7 @@ function TicketSection({
   onToggleSelect: (id: string) => void;
   onSelectAllOnSection: () => void;
   onOpen: (item: ActiveTicketItem) => void;
+  qtyMaxDecimals: number;
 }) {
   const [expanded, setExpanded] = useState(true);
   const [sort, setSort] = useState<SortState>(NO_SORT);
@@ -526,9 +655,14 @@ function TicketSection({
     ? `${timeMatch[1]}:${timeMatch[2]}:${timeMatch[3]}`
     : null;
   const priceLine =
-    timeText !== null && headerBuy !== undefined && headerSell !== undefined
-      ? `ราคา ณ เวลา ${timeText} น.: ${fmtNumber(headerBuy)} / ${fmtNumber(headerSell)}`
-      : null;
+    timeText !== null && headerBuy !== undefined && headerSell !== undefined ? (
+      <>
+        ราคา ณ เวลา {timeText} น.:{" "}
+        <span className="font-bold text-black">
+          {fmtNumber(headerBuy)} / {fmtNumber(headerSell)}
+        </span>
+      </>
+    ) : null;
 
   return (
     <Card className="rounded-xl">
@@ -660,7 +794,7 @@ function TicketSection({
                   } else if (u === null) {
                     uFormatted = { text: "—", cls: "" };
                   } else {
-                    uFormatted = fmtSignedColored(u);
+                    uFormatted = fmtTruncColored(u);
                   }
                   return (
                     <TableRow
@@ -704,7 +838,7 @@ function TicketSection({
                         className={`text-right tabular-nums ${
                           item.quantity < 0 ? "text-red-500" : ""
                         }`}>
-                        {fmtPlainSigned(item.quantity)}
+                        {fmtPlainSigned(item.quantity, qtyMaxDecimals)}
                       </TableCell>
                       <TableCell className="text-right tabular-nums">
                         {fmtNumber(item.pricePerUnit)}
@@ -713,7 +847,7 @@ function TicketSection({
                         className={`hidden md:table-cell text-right tabular-nums ${
                           item.totalPrice < 0 ? "text-red-500" : ""
                         }`}>
-                        {fmtPlainSigned(item.totalPrice)}
+                        {fmtTruncSigned(item.totalPrice)}
                       </TableCell>
                       <TableCell
                         className={`hidden md:table-cell text-right tabular-nums ${uFormatted.cls}`}>
@@ -747,7 +881,7 @@ function PortfolioDrawer({
   if (!item) return null;
   const u = unrealizeOf(item, goldPrices);
   const uFormatted =
-    u === null ? { text: "—", cls: "" } : fmtSignedColored(u);
+    u === null ? { text: "—", cls: "" } : fmtTruncColored(u);
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -766,15 +900,16 @@ function PortfolioDrawer({
             <Row label="ทรัพย์สิน" value={purityLabel(item.asset)} />
             <Row
               label="จำนวน"
-              value={`${fmtPlainSigned(item.quantity)} ${qtyTypeLabel(
-                item.quantityTypeText
-              )}`}
+              value={`${fmtPlainSigned(
+                item.quantity,
+                qtyDecimalsForAsset(item.asset)
+              )} ${qtyTypeLabel(item.quantityTypeText)}`}
               valueClass={item.quantity < 0 ? "text-red-500" : ""}
             />
             <Row label="ราคา" value={fmtNumber(item.pricePerUnit)} />
             <Row
               label="Total"
-              value={fmtPlainSigned(item.totalPrice)}
+              value={fmtTruncSigned(item.totalPrice)}
               valueClass={item.totalPrice < 0 ? "text-red-500" : ""}
             />
             <Row

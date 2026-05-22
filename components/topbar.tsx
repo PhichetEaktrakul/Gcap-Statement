@@ -11,8 +11,6 @@ export default function Topbar() {
   useEffect(() => {
     const updateTime = () => {
       const now = new Date();
-
-      // Thai locale + Buddhist year
       const formatted = now.toLocaleString("th-TH", {
         day: "2-digit",
         month: "short",
@@ -33,12 +31,12 @@ export default function Topbar() {
   return (
     <>
       {/* MOBILE topbar */}
-      <div className="md:hidden h-16 bg-[#0b1a3a] border-b border-white/10 flex items-center justify-between px-4 shrink-0 text-white">
+      <div className="md:hidden h-16 bg-linear-to-tl from-[#0a3a8c] via-[#052460] to-[#021539] border-b border-white/10 flex items-center justify-between px-4 shrink-0 text-white">
         <div className="bg-white rounded-lg p-1 flex items-center justify-center">
           <Image src={Gcaplogo} alt="GCAP Logo" className="size-9" />
         </div>
         <div className="flex items-center gap-3">
-          <div className="bg-[#c7ae86]/15 text-[#ffdfab] px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap">
+          <div className="bg-[#c7ae86]/15 text-[#ffdfab] px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap">
             {time}
           </div>
           <ProfilePopover />
@@ -46,7 +44,7 @@ export default function Topbar() {
       </div>
 
       {/* DESKTOP topbar */}
-      <div className="hidden md:flex h-16 bg-[#0b1a3a] border-b border-white/10 items-center justify-between px-6 text-white shrink-0">
+      <div className="hidden md:flex h-16 bg-linear-to-l from-[#0a3a8c] via-[#052460] to-[#021539] border-b border-white/10 items-center justify-between px-6 text-white shrink-0">
         <div className="flex items-center gap-3">
           <div className="bg-white rounded-lg p-1 flex items-center justify-center">
             <Image src={Gcaplogo} alt="GCAP Logo" className="size-9" />

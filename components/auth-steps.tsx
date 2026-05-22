@@ -18,7 +18,7 @@ import {
 
 export function CancelLink({
   onClick,
-  label = "ยกเลิก",
+  label = "Cancel",
 }: {
   onClick: () => void;
   label?: string;
@@ -53,7 +53,7 @@ export function Step1Form({
   return (
     <div className="space-y-4">
       <div className="space-y-2">
-        <Label>Code</Label>
+        <Label>Customer Code</Label>
         <Input
           type="text"
           placeholder="Enter your code"
@@ -124,7 +124,7 @@ export function Step2Form({
         className="w-full"
         onClick={onConfirm}
         disabled={loading || otp.length < 6}>
-        {loading ? "กำลังตรวจสอบ..." : "Confirm"}
+        {loading ? "กำลังตรวจสอบ..." : "ถัดไป"}
       </Button>
 
       {onCancel && <CancelLink onClick={onCancel} />}

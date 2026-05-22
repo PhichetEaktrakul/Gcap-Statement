@@ -20,7 +20,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     }
   }, [router]);
 
-  // Connect to the session hub once the auth check passes.
   useSessionHub();
 
   if (!authed) return null;
@@ -33,10 +32,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <div className="flex-1 overflow-auto pb-20 md:pb-0">{children}</div>
       </div>
       <BottomNav />
-
-      {/* Version stamp — tablet+ only */}
+      
       <span className="hidden md:block fixed bottom-2 right-3 text-xs text-gray-200 pointer-events-none select-none z-10">
-        G statement v1.0.0
+        © {new Date().getFullYear()} GCAP GOLD -- STATEMENT v1.0.5
       </span>
     </div>
   );

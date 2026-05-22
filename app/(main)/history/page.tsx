@@ -8,7 +8,6 @@ import {
   Table,
   TableHeader,
   TableRow,
-  TableHead,
   TableBody,
   TableCell,
 } from "@/components/ui/table";
@@ -19,7 +18,6 @@ import {
   SelectItem,
   SelectValue,
 } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
 import {
   Sheet,
   SheetContent,
@@ -46,7 +44,6 @@ const PAGE_SIZE_OPTIONS = [10, 20, 50] as const;
 const DEFAULT_PAGE_SIZE = 10;
 
 type Filters = {
-  searchTerm: string;
   command: string; // "all" | "1" | "2"
   asset: string; // "all" | "1" | "2"
   dateFrom: string;
@@ -54,7 +51,6 @@ type Filters = {
 };
 
 const initialFilters: Filters = {
-  searchTerm: "",
   command: "all",
   asset: "all",
   dateFrom: "",
@@ -72,25 +68,38 @@ function fmtDateTime(iso: string): string {
   return `${dd}/${mm}/${yyyy} ${hh}:${mi}`;
 }
 
-function fmtNumber(n: number): string {
+function fmtNumber(n: number, maxFraction = 2): string {
   return n.toLocaleString("en-US", {
     minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
+    maximumFractionDigits: maxFraction,
   });
 }
 
-function fmtPlainSigned(n: number): string {
-  if (n < 0) return `-${fmtNumber(Math.abs(n))}`;
-  return fmtNumber(n);
+function fmtPlainSigned(n: number, maxFraction = 2): string {
+  if (n < 0) return `-${fmtNumber(Math.abs(n), maxFraction)}`;
+  return fmtNumber(n, maxFraction);
 }
 
+function truncFmt(n: number, decimals: number): string {
+  const factor = 10 ** decimals;
+  const truncated = Math.trunc(n * factor) / factor;
+  return truncated.toLocaleString("en-US", {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  });
+}
+
+function fmtTruncSigned(n: number, decimals = 2): string {
+  if (n < 0) return `-${truncFmt(Math.abs(n), decimals)}`;
+  return truncFmt(n, decimals);
+}
+
+const qtyDecimalsForAsset = (asset: number) => (asset === 1 ? 9 : 5);
+
 const channelLabel = (t: string) => (t === "C" ? "Call" : "Leave Order");
-const purityLabel = (a: number) =>
-  a === 1 ? "Gold 99.99%" : a === 2 ? "Gold 96.50%" : "—";
-const commandLabel = (c: number) =>
-  c === 2 ? "ซื้อ" : c === 1 ? "ขาย" : "—";
-const qtyTypeLabel = (t: string) =>
-  t === "baht" ? "บาท" : t === "kg" ? "กิโล" : t;
+const purityLabel = (a: number) => a === 1 ? "Gold 99.99%" : a === 2 ? "Gold 96.50%" : "—";
+const commandLabel = (c: number) => c === 2 ? "ซื้อ" : c === 1 ? "ขาย" : "—";
+const qtyTypeLabel = (t: string) => t === "baht" ? "BAHT" : t === "kg" ? "KG" : t;
 
 export default function HistoryPage() {
   const [filters, setFilters] = useState<Filters>(initialFilters);
@@ -123,6 +132,7 @@ export default function HistoryPage() {
         return "";
     }
   }
+  
   const [items, setItems] = useState<TicketHistoryItem[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
@@ -135,8 +145,6 @@ export default function HistoryPage() {
       Page: page,
       PageSize: pageSize,
     };
-    if (appliedFilters.searchTerm)
-      params.SearchTerm = appliedFilters.searchTerm;
     if (appliedFilters.command !== "all")
       params["Filter.Command"] = Number(appliedFilters.command) as 1 | 2;
     if (appliedFilters.asset !== "all")
@@ -166,7 +174,14 @@ export default function HistoryPage() {
     return () => {
       cancelled = true;
     };
-  }, [appliedFilters, page, pageSize]);
+  }, [
+    appliedFilters.command,
+    appliedFilters.asset,
+    appliedFilters.dateFrom,
+    appliedFilters.dateTo,
+    page,
+    pageSize,
+  ]);
 
   function handleSearch() {
     setPage(1);
@@ -200,22 +215,10 @@ export default function HistoryPage() {
         <Card className="rounded-xl">
           <CardContent className="p-4 md:p-5">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:flex lg:flex-wrap gap-3 md:gap-4 lg:items-center">
-              <Input
-                placeholder="ค้นหา Ticket..."
-                className="w-full lg:w-[220px]"
-                value={filters.searchTerm}
-                onChange={(e) =>
-                  setFilters({ ...filters, searchTerm: e.target.value })
-                }
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") handleSearch();
-                }}
-              />
-
               <Select
                 value={filters.asset}
                 onValueChange={(v) => setFilters({ ...filters, asset: v })}>
-                <SelectTrigger className="w-full lg:w-[160px]">
+                <SelectTrigger className="w-full lg:w-40">
                   <SelectValue placeholder="ทรัพย์สิน" />
                 </SelectTrigger>
                 <SelectContent>
@@ -228,7 +231,7 @@ export default function HistoryPage() {
               <Select
                 value={filters.command}
                 onValueChange={(v) => setFilters({ ...filters, command: v })}>
-                <SelectTrigger className="w-full lg:w-[140px]">
+                <SelectTrigger className="w-full lg:w-35">
                   <SelectValue placeholder="คำสั่ง" />
                 </SelectTrigger>
                 <SelectContent>
@@ -241,16 +244,16 @@ export default function HistoryPage() {
               <DateField
                 value={filters.dateFrom}
                 onChange={(v) => setFilters({ ...filters, dateFrom: v })}
-                className="w-full lg:w-[170px]"
+                className="w-full lg:w-42.5"
               />
               <DateField
                 value={filters.dateTo}
                 onChange={(v) => setFilters({ ...filters, dateTo: v })}
-                className="w-full lg:w-[170px]"
+                className="w-full lg:w-42.5"
               />
 
               <Button
-                className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700"
+                className="w-full sm:w-auto bg-[#1959A3] hover:bg-[#144a8a]"
                 onClick={handleSearch}
                 disabled={loading}>
                 ค้นหา
@@ -347,7 +350,7 @@ export default function HistoryPage() {
                       </TableCell>
                       <TableCell>
                         <span
-                          className={`inline-block min-w-[3rem] text-center px-2 py-1 text-xs rounded-full ${
+                          className={`inline-block min-w-12 text-center px-2 py-1 text-xs rounded-full ${
                             item.command === 2
                               ? "bg-green-100 text-green-600"
                               : "bg-red-100 text-red-500"
@@ -362,7 +365,10 @@ export default function HistoryPage() {
                         className={`text-right tabular-nums ${
                           item.quantity < 0 ? "text-red-500" : ""
                         }`}>
-                        {fmtPlainSigned(item.quantity)}
+                        {fmtPlainSigned(
+                          item.quantity,
+                          qtyDecimalsForAsset(item.asset)
+                        )}
                       </TableCell>
                       <TableCell className="text-right tabular-nums">
                         {fmtNumber(item.pricePerUnit)}
@@ -371,7 +377,7 @@ export default function HistoryPage() {
                         className={`text-right tabular-nums ${
                           item.totalPrice < 0 ? "text-red-500" : ""
                         }`}>
-                        {fmtPlainSigned(item.totalPrice)}
+                        {fmtTruncSigned(item.totalPrice)}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -418,9 +424,9 @@ function PageSizeSelect({
 }) {
   return (
     <div className="flex items-center gap-1.5">
-      <span className="text-xs text-gray-500">/ หน้า</span>
+      <span className="text-xs text-gray-500">/ รายการ</span>
       <Select value={String(value)} onValueChange={(v) => onChange(Number(v))}>
-        <SelectTrigger className="h-8 w-[72px]">
+        <SelectTrigger className="h-8 w-18">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -501,7 +507,7 @@ function Pagination({
           key={n}
           className={`px-3 py-1 rounded border ${
             n === page
-              ? "bg-blue-600 text-white border-blue-600"
+              ? "bg-[#1959A3] text-white border-[#1959A3]"
               : "border-gray-200"
           }`}
           onClick={() => onChange(n)}>
@@ -558,15 +564,16 @@ function TicketDrawer({
             <Row label="คำสั่ง" value={commandLabel(item.command)} />
             <Row
               label="จำนวน"
-              value={`${fmtPlainSigned(item.quantity)} ${qtyTypeLabel(
-                item.quantityTypeText
-              )}`}
+              value={`${fmtPlainSigned(
+                item.quantity,
+                qtyDecimalsForAsset(item.asset)
+              )} ${qtyTypeLabel(item.quantityTypeText)}`}
               valueClass={item.quantity < 0 ? "text-red-500" : ""}
             />
             <Row label="ราคา" value={fmtNumber(item.pricePerUnit)} />
             <Row
               label="รวม"
-              value={fmtPlainSigned(item.totalPrice)}
+              value={fmtTruncSigned(item.totalPrice)}
               valueClass={item.totalPrice < 0 ? "text-red-500" : ""}
             />
           </div>

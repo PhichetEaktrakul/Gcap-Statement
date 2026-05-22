@@ -8,10 +8,14 @@ import {
   type CustomerMarginCover,
 } from "@/lib/api/services/customer.service";
 
-function fmt(value: number | undefined | null, maxFraction = 2): string {
+function fmt(
+  value: number | undefined | null,
+  maxFraction = 2,
+  minFraction = 0
+): string {
   if (value === undefined || value === null) return "—";
   return value.toLocaleString("en-US", {
-    minimumFractionDigits: 0,
+    minimumFractionDigits: minFraction,
     maximumFractionDigits: maxFraction,
   });
 }
@@ -51,7 +55,7 @@ export default function DashboardPage() {
           <CardContent className="px-4 md:px-5 py-1">
             <div className="text-sm text-gray-500">เงินฝาก</div>
             <div className="text-lg md:text-xl font-bold mt-1 text-right">
-              {fmt(assets?.cashAmount)} THB
+              {fmt(assets?.cashAmount, 2, 2)} THB
             </div>
           </CardContent>
         </Card>
@@ -79,13 +83,13 @@ export default function DashboardPage() {
       <Card className="rounded-xl">
         <CardContent className="p-4 md:p-5">
           <div className="grid grid-cols-3 text-xs md:text-sm text-gray-500 pb-3 border-b">
-            <div>ปริมาณที่ลูกค้าทำเพิ่มได้</div>
-            <div className="text-center text-green-600">ซื้อได้</div>
+            <div>ปริมาณที่ลูกค้าทำเพิ่มได้</div>            
             <div className="text-center text-red-500">ขายได้</div>
+            <div className="text-center text-green-600">ซื้อได้</div>
           </div>
 
           <div className="grid grid-cols-3 py-3 md:py-4 border-b text-sm md:text-base">
-            <div className="text-blue-600">99.99%</div>
+            <div className="text-[#0d255c]">99.99%</div>
             <div className="text-center">
               {fmt(margin?.canSell9999)}
               <span className="ml-3">KG</span>
@@ -97,7 +101,7 @@ export default function DashboardPage() {
           </div>
 
           <div className="grid grid-cols-3 py-3 md:py-4 text-sm md:text-base">
-            <div className="text-blue-600">96.50%</div>
+            <div className="text-[#0d255c]">96.50%</div>
             <div className="text-center">
               {fmt(margin?.canSell9650)}
               <span className="ml-3">BAHT</span>

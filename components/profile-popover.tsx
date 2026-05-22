@@ -88,7 +88,7 @@ export default function ProfilePopover() {
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <button
-          className="px-3 py-1.5 rounded-full bg-[#c7ae86]/15 text-[#ffdfab] text-sm font-semibold transition-opacity hover:opacity-90 min-w-[64px] text-center cursor-pointer"
+          className="px-3 py-1.5 rounded-lg bg-[#c7ae86]/15 text-[#ffdfab] text-sm font-semibold transition-opacity hover:opacity-90 min-w-[64px] text-center cursor-pointer"
           aria-label="Open profile menu">
           {profile?.customerCode ?? (loadedOnce ? "—" : "...")}
         </button>

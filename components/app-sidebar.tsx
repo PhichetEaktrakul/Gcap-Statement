@@ -30,7 +30,7 @@ export default function AppSidebar() {
   return (
     <aside
       className={`
-        hidden md:flex bg-[#0b1a3a] text-white h-screen flex-col transition-all duration-300
+        hidden md:flex bg-linear-to-t from-[#0a3a8c] via-[#052460] to-[#021539] text-white h-screen flex-col transition-all duration-300
         ${collapsed ? "w-20" : "w-64"}
       `}>
       {/* HEADER */}

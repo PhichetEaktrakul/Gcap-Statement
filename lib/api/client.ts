@@ -3,9 +3,10 @@ import axios, {
   AxiosInstance,
   InternalAxiosRequestConfig,
 } from "axios";
+import { API_BASE_URL } from "@/lib/config";
 
-const baseURL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
-const priceURL = process.env.NEXT_PUBLIC_PRICE_BASE_URL ?? "http://localhost:8080";
+const baseURL = API_BASE_URL;
+const priceURL = process.env.NEXT_PUBLIC_PRICE_BASE_URL ?? "";
 
 export const apiClient: AxiosInstance = axios.create({
   baseURL,

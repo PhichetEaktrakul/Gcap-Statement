@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Inbox } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -88,7 +88,7 @@ const purityLabel = (a: number) =>
 const commandLabel = (c: number) =>
   c === 2 ? "ซื้อ" : c === 1 ? "ขาย" : "—";
 const qtyTypeLabel = (t: string) =>
-  t === "baht" ? "บาท" : t === "kg" ? "กิโล" : t;
+  t === "baht" ? "BAHT" : t === "kg" ? "KG" : t;
 const statusLabel = (s: string) =>
   s ? s.charAt(0).toUpperCase() + s.slice(1) : "—";
 
@@ -195,33 +195,32 @@ export default function LeaveOrderPage() {
   const [selected, setSelected] = useState<LeaveOrderItem | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
+  const requestIdRef = useRef(0);
+  const fetchOrders = useCallback((showLoading: boolean) => {
+    const id = ++requestIdRef.current;
+    if (showLoading) setLoading(true);
+    tradeService
+      .getLeaveOrders()
+      .then((res) => {
+        if (id !== requestIdRef.current) return;
+        setAllItems(res.data);
+      })
+      .catch(() => {
+        if (id !== requestIdRef.current) return;
+        if (showLoading) setAllItems([]);
+      })
+      .finally(() => {
+        if (id === requestIdRef.current && showLoading) setLoading(false);
+      });
+  }, []);
+
   useEffect(() => {
-    let cancelled = false;
-
-    function load(showLoading: boolean) {
-      if (showLoading) setLoading(true);
-      tradeService
-        .getLeaveOrders()
-        .then((res) => {
-          if (cancelled) return;
-          setAllItems(res.data);
-        })
-        .catch(() => {
-          if (cancelled) return;
-          if (showLoading) setAllItems([]);
-        })
-        .finally(() => {
-          if (!cancelled && showLoading) setLoading(false);
-        });
-    }
-
-    load(true);
-    const intervalId = setInterval(() => load(false), 5 * 60 * 1000);
+    fetchOrders(true);
+    const intervalId = setInterval(() => fetchOrders(false), 5 * 60 * 1000);
     return () => {
-      cancelled = true;
       clearInterval(intervalId);
     };
-  }, []);
+  }, [fetchOrders]);
 
   const filtered = useMemo(() => {
     const fromIso = parseDdMmYyyy(appliedFilters.dateFrom);
@@ -274,6 +273,7 @@ export default function LeaveOrderPage() {
   function handleSearch() {
     setPage(1);
     setAppliedFilters(filters);
+    fetchOrders(true);
   }
 
   function handlePageSizeChange(n: number) {
@@ -332,7 +332,6 @@ export default function LeaveOrderPage() {
                   <SelectItem value="pending">Waiting</SelectItem>
                   <SelectItem value="complete">Complete</SelectItem>
                   <SelectItem value="cancelled">Cancelled</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
                 </SelectContent>
               </Select>
 
@@ -348,7 +347,7 @@ export default function LeaveOrderPage() {
               />
 
               <Button
-                className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700"
+                className="w-full sm:w-auto bg-[#1959A3] hover:bg-[#144a8a]"
                 onClick={handleSearch}>
                 ค้นหา
               </Button>
@@ -507,7 +506,7 @@ function PageSizeSelect({
 }) {
   return (
     <div className="flex items-center gap-1.5">
-      <span className="text-xs text-gray-500">/ หน้า</span>
+      <span className="text-xs text-gray-500">/ รายการ</span>
       <Select value={String(value)} onValueChange={(v) => onChange(Number(v))}>
         <SelectTrigger className="h-8 w-[72px]">
           <SelectValue />
@@ -590,7 +589,7 @@ function Pagination({
           key={n}
           className={`px-3 py-1 rounded border ${
             n === page
-              ? "bg-blue-600 text-white border-blue-600"
+              ? "bg-[#1959A3] text-white border-[#1959A3]"
               : "border-gray-200"
           }`}
           onClick={() => onChange(n)}>

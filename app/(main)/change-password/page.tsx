@@ -8,15 +8,9 @@ import { Button } from "@/components/ui/button";
 import { authService } from "@/lib/api/services/auth.service";
 import { customerService } from "@/lib/api/services/customer.service";
 import { registrationStorage } from "@/lib/api/auth-storage";
-import { Step2Form, Step3Form, CancelLink } from "@/components/auth-steps";
-
-function getErrorMessage(err: unknown, fallback: string): string {
-  const e = err as {
-    response?: { data?: { message?: string } };
-    message?: string;
-  };
-  return e?.response?.data?.message ?? e?.message ?? fallback;
-}
+import { setAccessToken } from "@/lib/api/client";
+import { getErrorMessage } from "@/lib/api/errors";
+import { Step2Form, Step3Form } from "@/components/auth-steps";
 
 export default function ChangePasswordPage() {
   const router = useRouter();
@@ -99,8 +93,9 @@ export default function ChangePasswordPage() {
         stage2Token
       );
       registrationStorage.clear();
-      toast.success("เปลี่ยนรหัสผ่านสำเร็จ");
-      router.push("/dashboard");
+      setAccessToken(null);
+      toast.success("รหัสผ่านถูกเปลี่ยน กรุณาเข้าสู่ระบบใหม่");
+      router.replace("/login");
     } catch (err) {
       toast.error(getErrorMessage(err, "ดำเนินการไม่สำเร็จ"));
     } finally {
@@ -109,7 +104,7 @@ export default function ChangePasswordPage() {
   }
 
   return (
-    <div className="p-4 md:p-6 space-y-4 md:space-y-6">
+    <div className="p-4 md:p-6 space-y-4 md:space-y-6 [--primary:#1959A3]">
       <h1 className="text-lg md:text-xl font-semibold">เปลี่ยนรหัสผ่าน</h1>
 
       <div className="flex justify-center">
@@ -125,35 +120,54 @@ export default function ChangePasswordPage() {
                     className="w-full"
                     onClick={handleStartChange}
                     disabled={step1Loading}>
-                    {step1Loading ? "กำลังส่ง..." : "Confirm"}
+                    {step1Loading ? "กำลังส่ง..." : "เปลี่ยนรหัสผ่าน"}
                   </Button>
-                  <CancelLink onClick={handleCancel} />
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={handleCancel}>
+                    ยกเลิก
+                  </Button>
                 </div>
               </div>
             )}
 
             {step === 2 && (
-              <Step2Form
-                otp={otp}
-                setOtp={setOtp}
-                loading={otpLoading}
-                onConfirm={handleVerifyOtp}
-                onCancel={handleCancel}
-              />
+              <div className="space-y-3">
+                <Step2Form
+                  otp={otp}
+                  setOtp={setOtp}
+                  loading={otpLoading}
+                  onConfirm={handleVerifyOtp}
+                />
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={handleCancel}>
+                  ยกเลิก
+                </Button>
+              </div>
             )}
 
             {step === 3 && (
-              <Step3Form
-                code={customerCode}
-                newPassword={newPassword}
-                setNewPassword={setNewPassword}
-                confirmPassword={confirmPassword}
-                setConfirmPassword={setConfirmPassword}
-                loading={setPwLoading}
-                submitLabel="Change password"
-                onConfirm={handleSetPassword}
-                onCancel={handleCancel}
-              />
+              <div className="space-y-3">
+                <Step3Form
+                  code={customerCode}
+                  newPassword={newPassword}
+                  setNewPassword={setNewPassword}
+                  confirmPassword={confirmPassword}
+                  setConfirmPassword={setConfirmPassword}
+                  loading={setPwLoading}
+                  submitLabel="เปลี่ยนรหัสผ่าน"
+                  onConfirm={handleSetPassword}
+                />
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={handleCancel}>
+                  ยกเลิก
+                </Button>
+              </div>
             )}
           </CardContent>
         </Card>

@@ -21,7 +21,7 @@ export default function BottomNav() {
 
   return (
     <nav
-      className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-[#0b1a3a] border-t border-white/10 text-white pb-[env(safe-area-inset-bottom)]"
+      className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-linear-to-bl from-[#0a3a8c] via-[#052460] to-[#021539] border-t border-white/10 text-white pb-[env(safe-area-inset-bottom)]"
       style={{ boxShadow: "0 -2px 12px rgba(0,0,0,0.25)" }}
       aria-label="Primary">
       <div className="grid grid-cols-4">

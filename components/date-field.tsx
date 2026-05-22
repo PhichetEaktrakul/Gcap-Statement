@@ -52,8 +52,6 @@ export default function DateField({
         className="pr-10"
       />
 
-      {/* Hidden anchor for showPicker positioning. pointer-events: none lets the
-          button on top receive every click in the icon area. */}
       <input
         ref={dateRef}
         type="date"
