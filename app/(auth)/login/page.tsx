@@ -30,6 +30,8 @@ export default function AuthPage() {
   const [loginLoading, setLoginLoading] = useState(false);
   const [termsOpen, setTermsOpen] = useState(false);
 
+  const [pendingToken, setPendingToken] = useState<string | null>(null);
+
   const [regCode, setRegCode] = useState("");
   const [regPhone, setRegPhone] = useState("");
   const [step1Loading, setStep1Loading] = useState(false);
@@ -62,29 +64,38 @@ export default function AuthPage() {
     setView("login");
   }
 
-  function handleLogin(e: React.SyntheticEvent<HTMLFormElement>) {
+  async function handleLogin(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!loginCode || !loginPassword) return;
-    // Require the user to accept the terms before logging in.
-    setTermsOpen(true);
-  }
-
-  async function confirmLogin() {
     setLoginLoading(true);
     try {
       const res = await authService.login({
         code: loginCode,
         password: loginPassword,
       });
-      setAccessToken(res.data.token);
-      setTermsOpen(false);
-      toast.success("เข้าสู่ระบบสำเร็จ");
-      router.push("/dashboard");
+      setPendingToken(res.data.token);
+      setTermsOpen(true);
     } catch (err) {
       toast.error(getErrorMessage(err, "เข้าสู่ระบบไม่สำเร็จ"));
     } finally {
       setLoginLoading(false);
     }
+  }
+
+  // Called when the user accepts the terms and clicks "ถัดไป".
+  function acceptTerms() {
+    if (!pendingToken) return;
+    setAccessToken(pendingToken);
+    setPendingToken(null);
+    setTermsOpen(false);
+    toast.success("เข้าสู่ระบบสำเร็จ");
+    router.push("/dashboard");
+  }
+
+  // Declining or closing the modal discards the token, so access is denied.
+  function handleTermsOpenChange(open: boolean) {
+    setTermsOpen(open);
+    if (!open) setPendingToken(null);
   }
 
   async function handleStep1() {
@@ -309,11 +320,8 @@ export default function AuthPage() {
 
       <TermsAgreementDialog
         open={termsOpen}
-        onOpenChange={(o) => {
-          if (!loginLoading) setTermsOpen(o);
-        }}
-        loading={loginLoading}
-        onConfirm={confirmLogin}
+        onOpenChange={handleTermsOpenChange}
+        onConfirm={acceptTerms}
       />
     </div>
   );
