@@ -22,6 +22,6 @@ export const ENDPOINTS = {
     },
   },
   gold: {
-    latest: "/api/gold-gcap/latest/uat",
+    latest: "/api/gold-gcap/latest",
   },
 } as const;
