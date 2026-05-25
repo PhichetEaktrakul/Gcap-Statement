@@ -6,7 +6,7 @@ import axios, {
 import { API_BASE_URL } from "@/lib/config";
 
 const baseURL = API_BASE_URL;
-const priceURL = process.env.NEXT_PUBLIC_PRICE_BASE_URL ?? "";
+const priceURL = process.env.PRICE_BASE_URL ?? "";
 
 export const apiClient: AxiosInstance = axios.create({
   baseURL,

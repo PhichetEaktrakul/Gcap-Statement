@@ -7,6 +7,6 @@ services:
       - "${SERVER_PORT}:3000"
 
     environment:
-      NEXT_PUBLIC_BASE_URL: ${NEXT_PUBLIC_BASE_URL}
-      NEXT_PUBLIC_PRICE_BASE_URL: ${NEXT_PUBLIC_PRICE_BASE_URL}
+      BASE_URL: ${BASE_URL}
+      PRICE_BASE_URL: ${PRICE_BASE_URL}
       
