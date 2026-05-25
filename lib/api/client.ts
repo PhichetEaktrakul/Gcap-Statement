@@ -3,13 +3,9 @@ import axios, {
   AxiosInstance,
   InternalAxiosRequestConfig,
 } from "axios";
-import { API_BASE_URL } from "@/lib/config";
-
-const baseURL = API_BASE_URL;
-const priceURL = process.env.PRICE_BASE_URL ?? "";
+import { getApiBaseUrl, getPriceBaseUrl } from "@/lib/config";
 
 export const apiClient: AxiosInstance = axios.create({
-  baseURL,
   timeout: 15_000,
   withCredentials: true,
   headers: {
@@ -21,11 +17,22 @@ export const apiClient: AxiosInstance = axios.create({
 // Separate client for the public gold-price feed. No auth interceptors,
 // no withCredentials — it's a different host with its own contract.
 export const priceClient: AxiosInstance = axios.create({
-  baseURL: priceURL,
   timeout: 15_000,
   headers: {
     Accept: "application/json",
   },
+});
+
+// baseURL is resolved per request (not at module load) so it reflects the
+// runtime-injected config. See lib/runtime-config.ts.
+apiClient.interceptors.request.use((config) => {
+  config.baseURL = getApiBaseUrl();
+  return config;
+});
+
+priceClient.interceptors.request.use((config) => {
+  config.baseURL = getPriceBaseUrl();
+  return config;
 });
 
 const TOKEN_STORAGE_KEY = "gcap.access_token";
@@ -76,7 +83,7 @@ function performRefresh(): Promise<string> {
   if (refreshingPromise) return refreshingPromise;
   refreshingPromise = axios
     .post<RefreshResponse>(
-      `${baseURL}/auth/refresh`,
+      `${getApiBaseUrl()}/auth/refresh`,
       {},
       {
         withCredentials: true,

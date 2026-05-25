@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  output: "standalone",
   // Whitelists cross-origin requests to the dev server only.
   allowedDevOrigins: ["uat-web.gcap.co.th"],
 };
