@@ -3,17 +3,9 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import {
-  HubConnection,
-  HubConnectionBuilder,
-  LogLevel,
-} from "@microsoft/signalr";
-import {
-  getAccessToken,
-  refreshAccessToken,
-  setAccessToken,
-} from "@/lib/api/client";
 import { getSignalrHubUrl } from "@/lib/config";
+import { HubConnection, HubConnectionBuilder, LogLevel } from "@microsoft/signalr";
+import { getAccessToken, refreshAccessToken, setAccessToken } from "@/lib/api/client";
 
 type ForceLogoutPayload = { reason?: string };
 
@@ -24,10 +16,13 @@ function isAuthError(err: unknown): boolean {
   return /\b401\b|unauthorized/i.test(e.message ?? "");
 }
 
+// -----------------------------------------------------------------------------------------------------
 // Opens a single SignalR connection to the runtime-configured hub URL and listens for the server's
 // ForceLogout event (used to kick the previous session when the user signs in
 // from another device). On a 401 during start/reconnect, attempts a single
 // token refresh; if that fails the user is forced back to /login.
+// -----------------------------------------------------------------------------------------------------
+
 export function useSessionHub() {
   const router = useRouter();
 

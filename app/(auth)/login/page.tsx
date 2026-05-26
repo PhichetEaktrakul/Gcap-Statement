@@ -82,7 +82,6 @@ export default function AuthPage() {
     }
   }
 
-  // Called when the user accepts the terms and clicks "ถัดไป".
   function acceptTerms() {
     if (!pendingToken) return;
     setAccessToken(pendingToken);
@@ -91,8 +90,7 @@ export default function AuthPage() {
     toast.success("เข้าสู่ระบบสำเร็จ");
     router.push("/dashboard");
   }
-
-  // Declining or closing the modal discards the token, so access is denied.
+  
   function handleTermsOpenChange(open: boolean) {
     setTermsOpen(open);
     if (!open) setPendingToken(null);

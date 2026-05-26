@@ -1,8 +1,4 @@
-import axios, {
-  AxiosError,
-  AxiosInstance,
-  InternalAxiosRequestConfig,
-} from "axios";
+import axios, { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from "axios";
 import { getApiBaseUrl, getPriceBaseUrl } from "@/lib/config";
 
 export const apiClient: AxiosInstance = axios.create({
@@ -14,8 +10,6 @@ export const apiClient: AxiosInstance = axios.create({
   },
 });
 
-// Separate client for the public gold-price feed. No auth interceptors,
-// no withCredentials — it's a different host with its own contract.
 export const priceClient: AxiosInstance = axios.create({
   timeout: 15_000,
   headers: {
@@ -23,8 +17,6 @@ export const priceClient: AxiosInstance = axios.create({
   },
 });
 
-// baseURL is resolved per request (not at module load) so it reflects the
-// runtime-injected config. See lib/runtime-config.ts.
 apiClient.interceptors.request.use((config) => {
   config.baseURL = getApiBaseUrl();
   return config;
@@ -71,7 +63,6 @@ apiClient.interceptors.request.use(
   (error: AxiosError) => Promise.reject(error),
 );
 
-// Refresh-token plumbing — single in-flight refresh, queued retries.
 type RefreshResponse = {
   success: boolean;
   data: { token: string };

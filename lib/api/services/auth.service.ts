@@ -55,10 +55,7 @@ export const authService = {
 
   forgotPassword: (payload: ForgotPasswordPayload) =>
     apiClient
-      .post<ApiResponse<ForgotPasswordResponse>>(
-        ENDPOINTS.auth.forgotPassword,
-        payload
-      )
+      .post<ApiResponse<ForgotPasswordResponse>>(ENDPOINTS.auth.forgotPassword, payload)
       .then((r) => r.data),
 
   verifyOtp: (payload: VerifyOtpPayload, stage1Token: string) =>
@@ -77,10 +74,7 @@ export const authService = {
 
   validatePassword: (payload: ValidatePasswordPayload) =>
     apiClient
-      .post<ApiResponse<ValidatePasswordData>>(
-        ENDPOINTS.auth.validatePassword,
-        payload
-      )
+      .post<ApiResponse<ValidatePasswordData>>(ENDPOINTS.auth.validatePassword, payload)
       .then((r) => r.data),
 
   logout: () =>

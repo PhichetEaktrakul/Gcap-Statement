@@ -32,9 +32,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <div className="flex-1 overflow-auto pb-20 md:pb-0">{children}</div>
       </div>
       <BottomNav />
-      
+
       <span className="hidden md:block fixed bottom-2 right-3 text-xs text-gray-200 pointer-events-none select-none z-10">
-        © {new Date().getFullYear()} GCAP GOLD -- STATEMENT v1.0.5
+        © {new Date().getFullYear()} GCAP GOLD -- STATEMENT v1.0.7
       </span>
     </div>
   );

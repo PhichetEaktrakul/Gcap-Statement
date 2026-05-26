@@ -1,12 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Toaster } from "sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { getRuntimeConfig } from "@/lib/config";
+import ConfigProvider from "@/components/config-provider";
 import "./globals.css";
-
-// Rendered at request time so the injected config reflects the container's env
-// (docker-compose `environment:`), not the values present during `next build`.
-export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   applicationName: "GCall — Statement viewer for call customers",
@@ -55,23 +51,13 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
       <body>
-        {/* Runs before the app bundle so window.__APP_CONFIG__ is set before any
-            client code reads the backend URLs. `<` is escaped so a value can't
-            break out of the tag. */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `window.__APP_CONFIG__=${JSON.stringify(getRuntimeConfig()).replace(/</g, "\\u003c")};`,
-          }}
-        />
-        <TooltipProvider>{children}</TooltipProvider>
+        <ConfigProvider>
+          <TooltipProvider>{children}</TooltipProvider>
+        </ConfigProvider>
         <Toaster richColors position="top-center" />
       </body>
     </html>

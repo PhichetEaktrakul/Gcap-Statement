@@ -49,8 +49,6 @@ export const customerService = {
 
   getMarginCover: () =>
     apiClient
-      .get<ApiResponse<CustomerMarginCover>>(
-        ENDPOINTS.gcalltrade.customer.marginCover
-      )
+      .get<ApiResponse<CustomerMarginCover>>(ENDPOINTS.gcalltrade.customer.marginCover)
       .then((r) => r.data),
 };
