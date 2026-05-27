@@ -8,7 +8,6 @@ import {
   Table,
   TableHeader,
   TableRow,
-  TableHead,
   TableBody,
   TableCell,
 } from "@/components/ui/table";
@@ -19,7 +18,6 @@ import {
   SelectItem,
   SelectValue,
 } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
 import {
   Sheet,
   SheetContent,
@@ -76,6 +74,19 @@ function fmtDateTime(iso: string): string {
   return `${dd}/${mm}/${yyyy} ${hh}:${mi}`;
 }
 
+// dd/mm/yyyy (4-digit Buddhist year) + HH:mm — used in the drawer's status
+// label for completed/cancelled orders, e.g. "สถานะ (26/05/2569 16:30)".
+function fmtActionDateTime(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const yyyy = String(d.getFullYear() + 543).padStart(4, "0");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mi = String(d.getMinutes()).padStart(2, "0");
+  return `${dd}/${mm}/${yyyy} ${hh}:${mi}`;
+}
+
 function fmtNumber(n: number): string {
   return n.toLocaleString("en-US", {
     minimumFractionDigits: 0,
@@ -91,6 +102,17 @@ const qtyTypeLabel = (t: string) =>
   t === "baht" ? "BAHT" : t === "kg" ? "KG" : t;
 const statusLabel = (s: string) =>
   s ? s.charAt(0).toUpperCase() + s.slice(1) : "—";
+
+// Same palette as <StatusIcon/>. Used for the mobile row-leading color bar
+// that replaces the status column when the table is too narrow to show it.
+const statusColor = (s: string) =>
+  s === "pending"
+    ? "#3B82F6"
+    : s === "complete"
+    ? "#22C55E"
+    : s === "cancelled"
+    ? "#EF4444"
+    : "transparent";
 
 function StatusIcon({ status, size = 24 }: { status: string; size?: number }) {
   if (status === "pending") {
@@ -389,7 +411,8 @@ export default function LeaveOrderPage() {
                     columnKey="statusText"
                     state={sort}
                     onSort={handleSort}
-                    align="center">
+                    align="center"
+                    className="hidden md:table-cell">
                     สถานะ
                   </SortableHead>
                 </TableRow>
@@ -419,7 +442,12 @@ export default function LeaveOrderPage() {
                   pageItems.map((item) => (
                     <TableRow
                       key={item.leaveCode}
-                      className="cursor-pointer hover:bg-gray-50 transition"
+                      // Mobile only (< md): the สถานะ column is hidden; show the
+                      // status color as a 4px leading bar on the row instead.
+                      // `!` beats TableBody's `[&_tr:last-child]:border-0`, which
+                      // would otherwise zero the bar on the last row.
+                      style={{ borderLeftColor: statusColor(item.statusText) }}
+                      className="max-md:border-l-4! cursor-pointer hover:bg-gray-50 transition"
                       onClick={() => openOrder(item)}>
                       <TableCell>
                         <DateTimeCell iso={item.createDate} />
@@ -443,7 +471,7 @@ export default function LeaveOrderPage() {
                       <TableCell className="text-right tabular-nums">
                         {fmtNumber(item.pricePerUnit)}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="hidden md:table-cell">
                         <div className="flex justify-center">
                           <StatusIcon status={item.statusText} />
                         </div>
@@ -651,7 +679,13 @@ function LeaveOrderDrawer({
             />
             <Row label="ราคาตั้ง" value={fmtNumber(item.pricePerUnit)} />
             <Row
-              label="สถานะ"
+              label={
+                (item.statusText === "complete" ||
+                  item.statusText === "cancelled") &&
+                item.actionDate
+                  ? `สถานะ (${fmtActionDateTime(item.actionDate)})`
+                  : "สถานะ"
+              }
               value={item.statusText === "pending" ? "Waiting" : item.statusText}
             />
           </div>

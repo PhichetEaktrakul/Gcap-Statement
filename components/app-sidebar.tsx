@@ -2,18 +2,8 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
-import {
-  PanelLeft,
-  LayoutDashboard,
-  Briefcase,
-  FileText,
-  History,
-} from "lucide-react";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { PanelLeft, LayoutDashboard, Briefcase, FileText, History } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 const menu = [
   { name: "Dashboard", icon: LayoutDashboard, path: "/dashboard" },

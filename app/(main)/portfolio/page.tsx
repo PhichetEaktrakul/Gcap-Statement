@@ -504,7 +504,7 @@ export default function PortfolioPage() {
               <Button
                 className="bg-[#1959A3] hover:bg-[#144a8a] w-full lg:w-auto"
                 onClick={handleCalculate}>
-                คำนวน
+                คำนวณ
               </Button>
             </div>
           </CardContent>
@@ -738,8 +738,7 @@ function TicketSection({
                   columnKey="totalPrice"
                   state={sort}
                   onSort={handleSort}
-                  align="right"
-                  className="hidden md:table-cell">
+                  align="right">
                   TOTAL
                 </SortableHead>
                 <SortableHead
@@ -789,7 +788,7 @@ function TicketSection({
                   let uFormatted: { text: string; cls: string };
                   if (isCommitted) {
                     // Committed rows zero out in the display until the user
-                    // unticks and presses คำนวน again.
+                    // unticks and presses คำนวณ again.
                     uFormatted = { text: "0", cls: "" };
                   } else if (u === null) {
                     uFormatted = { text: "—", cls: "" };
@@ -844,7 +843,7 @@ function TicketSection({
                         {fmtNumber(item.pricePerUnit)}
                       </TableCell>
                       <TableCell
-                        className={`hidden md:table-cell text-right tabular-nums ${
+                        className={`text-right tabular-nums ${
                           item.totalPrice < 0 ? "text-red-500" : ""
                         }`}>
                         {fmtTruncSigned(item.totalPrice)}

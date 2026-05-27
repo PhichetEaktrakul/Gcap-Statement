@@ -41,7 +41,6 @@ export default function PasswordStrength({
         ))}
       </div>
 
-      {/* Mismatch always wins — must be resolved before password validity matters */}
       {mismatch ? (
         <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
           <div className="font-medium">รหัสผ่านไม่ตรงกัน</div>

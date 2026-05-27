@@ -1,3 +1,4 @@
+// Progressively formats raw user input into a dd/mm/yyyy mask as digits are typed.
 export function maskDdMmYyyy(input: string): string {
   const digits = input.replace(/\D/g, "").slice(0, 8);
   if (digits.length <= 2) return digits;
@@ -5,6 +6,7 @@ export function maskDdMmYyyy(input: string): string {
   return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
 }
 
+// Parses a dd/mm/yyyy string into an ISO yyyy-mm-dd date.
 export function parseDdMmYyyy(s: string): string | null {
   const m = s.trim().match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
   if (!m) return null;
@@ -40,6 +42,7 @@ export function dateToDdMmYyyy(d: Date): string {
   return `${dd}/${mm}/${yyyy}`;
 }
 
+// Converts an ISO yyyy-mm-dd[...] string to dd/mm/yyyy; returns "" if the prefix doesn't match.
 export function isoDateToDdMmYyyy(iso: string): string {
   const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (!m) return "";

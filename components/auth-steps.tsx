@@ -3,18 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
-import {
-  InputOTP,
-  InputOTPGroup,
-  InputOTPSlot,
-} from "@/components/ui/input-otp";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import PasswordStrength from "@/components/password-strength";
-import {
-  authService,
-  type ValidatePasswordData,
-} from "@/lib/api/services/auth.service";
+import { authService, type ValidatePasswordData } from "@/lib/api/services/auth.service";
 
 export function CancelLink({
   onClick,
@@ -192,8 +185,6 @@ export function Step3Form({
       return;
     }
 
-    // If the user pressed confirm before the debounce fired, run validation
-    // now to guarantee a fresh result, then act on it.
     if (debounceRef.current) clearTimeout(debounceRef.current);
     setValidating(true);
     try {

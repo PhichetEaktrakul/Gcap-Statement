@@ -108,8 +108,7 @@ apiClient.interceptors.response.use(
     if (!original || status !== 401) {
       return Promise.reject(error);
     }
-
-    // Skip refresh for auth endpoints (login, refresh itself, registration stages).
+    
     const url = original.url ?? "";
     if (url.includes("/auth/") || original._retried) {
       return Promise.reject(error);

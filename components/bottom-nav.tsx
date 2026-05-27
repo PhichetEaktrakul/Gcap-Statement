@@ -1,12 +1,7 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import {
-  LayoutDashboard,
-  Briefcase,
-  FileText,
-  History,
-} from "lucide-react";
+import { LayoutDashboard, Briefcase, FileText, History } from "lucide-react";
 
 const items = [
   { name: "Dashboard", icon: LayoutDashboard, path: "/dashboard" },

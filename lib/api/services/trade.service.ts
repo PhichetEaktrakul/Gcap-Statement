@@ -61,6 +61,8 @@ export type LeaveOrderItem = {
   pricePerUnit: number;
   leaveStatus: number;
   statusText: LeaveOrderStatusText;
+  // ISO timestamp the order was completed or cancelled — absent while pending.
+  actionDate?: string;
 };
 
 export type ActiveTicketItem = TicketHistoryItem & {

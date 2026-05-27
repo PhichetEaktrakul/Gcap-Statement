@@ -3,17 +3,10 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import {
-  customerService,
-  type CustomerProfile,
-} from "@/lib/api/services/customer.service";
+import { customerService, type CustomerProfile } from "@/lib/api/services/customer.service";
 import { authService } from "@/lib/api/services/auth.service";
 import { refreshAccessToken, setAccessToken } from "@/lib/api/client";
 
@@ -57,8 +50,6 @@ export default function ProfilePopover() {
           await refreshAccessToken();
           res = await authService.logout();
         } catch {
-          // Refresh failed (or the retried logout failed). Clear locally and
-          // bail out to /login without a success toast.
           setAccessToken(null);
           setOpen(false);
           router.replace("/login");
