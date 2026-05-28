@@ -65,6 +65,30 @@ export type LeaveOrderItem = {
   actionDate?: string;
 };
 
+export type LeaveOrderPage = {
+  items: LeaveOrderItem[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+};
+
+// 1 = Complete, 2 = Cancelled, 3 = Waiting
+export type LeaveStatusCode = 1 | 2 | 3;
+
+export type LeaveOrderParams = {
+  Page?: number;
+  PageSize?: number;
+  SearchTerm?: string;
+  "Filter.Command"?: TicketCommand;
+  "Filter.AssetId"?: TicketAsset;
+  "Filter.LeaveStatus"?: LeaveStatusCode;
+  "Filter.DateFrom"?: string;
+  "Filter.DateTo"?: string;
+};
+
 export type ActiveTicketItem = TicketHistoryItem & {
   dueDate?: string;
 };
@@ -85,10 +109,11 @@ export const tradeService = {
       )
       .then((r) => r.data),
 
-  getLeaveOrders: () =>
+  getLeaveOrders: (params?: LeaveOrderParams) =>
     apiClient
-      .get<ApiResponse<LeaveOrderItem[]>>(
-        ENDPOINTS.gcalltrade.trade.leaveOrders
+      .get<ApiResponse<LeaveOrderPage>>(
+        ENDPOINTS.gcalltrade.trade.leaveOrders,
+        { params }
       )
       .then((r) => r.data),
 };

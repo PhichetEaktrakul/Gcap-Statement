@@ -34,7 +34,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <BottomNav />
 
       <span className="hidden md:block fixed bottom-2 right-3 text-xs text-gray-200 pointer-events-none select-none z-10">
-        © {new Date().getFullYear()} GCAP GOLD -- STATEMENT v1.0.7
+        © {new Date().getFullYear()} GCAP GOLD -- STATEMENT v1.0.8
       </span>
     </div>
   );

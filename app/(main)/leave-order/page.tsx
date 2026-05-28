@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Inbox } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,9 @@ import {
   SelectContent,
   SelectItem,
   SelectValue,
+  SelectGroup,
+  SelectLabel,
+  SelectSeparator,
 } from "@/components/ui/select";
 import {
   Sheet,
@@ -27,6 +30,10 @@ import {
 import {
   tradeService,
   type LeaveOrderItem,
+  type LeaveOrderParams,
+  type LeaveStatusCode,
+  type TicketAsset,
+  type TicketCommand,
 } from "@/lib/api/services/trade.service";
 import { dateToDdMmYyyy, parseDdMmYyyy } from "@/lib/date";
 import DateField from "@/components/date-field";
@@ -55,9 +62,9 @@ function buildInitialFilters(): Filters {
   const sevenDaysAgo = new Date();
   sevenDaysAgo.setDate(today.getDate() - 7);
   return {
-    asset: "all",
-    command: "all",
-    status: "all",
+    asset: "",
+    command: "",
+    status: "",
     dateFrom: dateToDdMmYyyy(sevenDaysAgo),
     dateTo: dateToDdMmYyyy(today),
   };
@@ -104,7 +111,7 @@ const statusLabel = (s: string) =>
   s ? s.charAt(0).toUpperCase() + s.slice(1) : "—";
 
 // Same palette as <StatusIcon/>. Used for the mobile row-leading color bar
-// that replaces the status column when the table is too narrow to show it.
+// that supplements the status column on narrow screens.
 const statusColor = (s: string) =>
   s === "pending"
     ? "#3B82F6"
@@ -183,8 +190,6 @@ function StatusIcon({ status, size = 24 }: { status: string; size?: number }) {
 }
 
 export default function LeaveOrderPage() {
-  const [allItems, setAllItems] = useState<LeaveOrderItem[]>([]);
-  const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<Filters>(buildInitialFilters);
   const [appliedFilters, setAppliedFilters] =
     useState<Filters>(buildInitialFilters);
@@ -214,88 +219,76 @@ export default function LeaveOrderPage() {
         return "";
     }
   }
+
+  const [items, setItems] = useState<LeaveOrderItem[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState<LeaveOrderItem | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  // Bumped on every ค้นหา click to force a refetch even when nothing else
+  // in the effect's dep array has changed.
+  const [refreshNonce, setRefreshNonce] = useState(0);
 
-  const requestIdRef = useRef(0);
-  const fetchOrders = useCallback((showLoading: boolean) => {
-    const id = ++requestIdRef.current;
-    if (showLoading) setLoading(true);
+  useEffect(() => {
+    const params: LeaveOrderParams = {
+      Page: page,
+      PageSize: pageSize,
+    };
+    if (appliedFilters.command && appliedFilters.command !== "all")
+      params["Filter.Command"] = Number(appliedFilters.command) as TicketCommand;
+    if (appliedFilters.asset && appliedFilters.asset !== "all")
+      params["Filter.AssetId"] = Number(appliedFilters.asset) as TicketAsset;
+    if (appliedFilters.status && appliedFilters.status !== "all")
+      params["Filter.LeaveStatus"] = Number(appliedFilters.status) as LeaveStatusCode;
+    const fromIso = parseDdMmYyyy(appliedFilters.dateFrom);
+    if (fromIso) params["Filter.DateFrom"] = fromIso;
+    const toIso = parseDdMmYyyy(appliedFilters.dateTo);
+    if (toIso) params["Filter.DateTo"] = toIso;
+
+    let cancelled = false;
+    setLoading(true);
     tradeService
-      .getLeaveOrders()
+      .getLeaveOrders(params)
       .then((res) => {
-        if (id !== requestIdRef.current) return;
-        setAllItems(res.data);
+        if (cancelled) return;
+        setItems(res.data.items);
+        setTotalCount(res.data.totalCount);
+        setTotalPages(res.data.totalPages || 1);
       })
       .catch(() => {
-        if (id !== requestIdRef.current) return;
-        if (showLoading) setAllItems([]);
+        if (cancelled) return;
+        setItems([]);
       })
       .finally(() => {
-        if (id === requestIdRef.current && showLoading) setLoading(false);
+        if (!cancelled) setLoading(false);
       });
-  }, []);
-
-  useEffect(() => {
-    fetchOrders(true);
-    const intervalId = setInterval(() => fetchOrders(false), 5 * 60 * 1000);
     return () => {
-      clearInterval(intervalId);
+      cancelled = true;
     };
-  }, [fetchOrders]);
+  }, [
+    appliedFilters.command,
+    appliedFilters.asset,
+    appliedFilters.status,
+    appliedFilters.dateFrom,
+    appliedFilters.dateTo,
+    page,
+    pageSize,
+    refreshNonce,
+  ]);
 
-  const filtered = useMemo(() => {
-    const fromIso = parseDdMmYyyy(appliedFilters.dateFrom);
-    const toIso = parseDdMmYyyy(appliedFilters.dateTo);
-    const fromTs = fromIso ? new Date(`${fromIso}T00:00:00`).getTime() : null;
-    const toTs = toIso ? new Date(`${toIso}T23:59:59.999`).getTime() : null;
-
-    return allItems.filter((item) => {
-      if (
-        appliedFilters.asset !== "all" &&
-        item.asset !== Number(appliedFilters.asset)
-      )
-        return false;
-      if (
-        appliedFilters.command !== "all" &&
-        item.command !== Number(appliedFilters.command)
-      )
-        return false;
-      if (
-        appliedFilters.status !== "all" &&
-        item.statusText !== appliedFilters.status
-      )
-        return false;
-      if (fromTs !== null || toTs !== null) {
-        const ts = new Date(item.createDate).getTime();
-        if (fromTs !== null && ts < fromTs) return false;
-        if (toTs !== null && ts > toTs) return false;
-      }
-      return true;
-    });
-  }, [allItems, appliedFilters]);
-
-  const sorted = useMemo(
-    () => sortItems(filtered, sort, getSortKey),
-    [filtered, sort]
+  const sortedItems = useMemo(
+    () => sortItems(items, sort, getSortKey),
+    [items, sort]
   );
 
-  const totalCount = sorted.length;
-  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
-
-  // Clamp page if filters shrink the result set below current page.
-  useEffect(() => {
-    if (page > totalPages) setPage(totalPages);
-  }, [page, totalPages]);
-
-  const pageItems = sorted.slice((page - 1) * pageSize, page * pageSize);
   const start = totalCount === 0 ? 0 : (page - 1) * pageSize + 1;
   const end = Math.min(page * pageSize, totalCount);
 
   function handleSearch() {
     setPage(1);
     setAppliedFilters(filters);
-    fetchOrders(true);
+    setRefreshNonce((n) => n + 1);
   }
 
   function handlePageSizeChange(n: number) {
@@ -324,9 +317,13 @@ export default function LeaveOrderPage() {
                   <SelectValue placeholder="ทรัพย์สิน" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">ทรัพย์สิน</SelectItem>
-                  <SelectItem value="2">96.50%</SelectItem>
-                  <SelectItem value="1">99.99%</SelectItem>
+                  <SelectGroup>
+                    <SelectLabel>ทรัพย์สิน</SelectLabel>
+                    <SelectSeparator />
+                    <SelectItem value="all">ทั้งหมด</SelectItem>
+                    <SelectItem value="2">96.50%</SelectItem>
+                    <SelectItem value="1">99.99%</SelectItem>
+                  </SelectGroup>
                 </SelectContent>
               </Select>
 
@@ -337,9 +334,13 @@ export default function LeaveOrderPage() {
                   <SelectValue placeholder="คำสั่ง" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">คำสั่ง</SelectItem>
-                  <SelectItem value="2">ซื้อ</SelectItem>
-                  <SelectItem value="1">ขาย</SelectItem>
+                  <SelectGroup>
+                    <SelectLabel>คำสั่ง</SelectLabel>
+                    <SelectSeparator />
+                    <SelectItem value="all">ทั้งหมด</SelectItem>
+                    <SelectItem value="2">ซื้อ</SelectItem>
+                    <SelectItem value="1">ขาย</SelectItem>
+                  </SelectGroup>
                 </SelectContent>
               </Select>
 
@@ -350,10 +351,14 @@ export default function LeaveOrderPage() {
                   <SelectValue placeholder="สถานะ" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">สถานะ</SelectItem>
-                  <SelectItem value="pending">Waiting</SelectItem>
-                  <SelectItem value="complete">Complete</SelectItem>
-                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                  <SelectGroup>
+                    <SelectLabel>สถานะ</SelectLabel>
+                    <SelectSeparator />
+                    <SelectItem value="all">ทั้งหมด</SelectItem>
+                    <SelectItem value="3">Waiting</SelectItem>
+                    <SelectItem value="1">Complete</SelectItem>
+                    <SelectItem value="2">Cancelled</SelectItem>
+                  </SelectGroup>
                 </SelectContent>
               </Select>
 
@@ -370,7 +375,8 @@ export default function LeaveOrderPage() {
 
               <Button
                 className="w-full sm:w-auto bg-[#1959A3] hover:bg-[#144a8a]"
-                onClick={handleSearch}>
+                onClick={handleSearch}
+                disabled={loading}>
                 ค้นหา
               </Button>
             </div>
@@ -411,8 +417,7 @@ export default function LeaveOrderPage() {
                     columnKey="statusText"
                     state={sort}
                     onSort={handleSort}
-                    align="center"
-                    className="hidden md:table-cell">
+                    align="center">
                     สถานะ
                   </SortableHead>
                 </TableRow>
@@ -428,7 +433,7 @@ export default function LeaveOrderPage() {
                     </TableCell>
                   </TableRow>
                 )}
-                {!loading && pageItems.length === 0 && (
+                {!loading && sortedItems.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={6} className="py-10">
                       <div className="flex flex-col items-center gap-2 text-gray-400">
@@ -439,11 +444,11 @@ export default function LeaveOrderPage() {
                   </TableRow>
                 )}
                 {!loading &&
-                  pageItems.map((item) => (
+                  sortedItems.map((item) => (
                     <TableRow
                       key={item.leaveCode}
-                      // Mobile only (< md): the สถานะ column is hidden; show the
-                      // status color as a 4px leading bar on the row instead.
+                      // Mobile only (< md): show the status color as a 4px
+                      // leading bar on the row alongside the status column.
                       // `!` beats TableBody's `[&_tr:last-child]:border-0`, which
                       // would otherwise zero the bar on the last row.
                       style={{ borderLeftColor: statusColor(item.statusText) }}
@@ -471,7 +476,7 @@ export default function LeaveOrderPage() {
                       <TableCell className="text-right tabular-nums">
                         {fmtNumber(item.pricePerUnit)}
                       </TableCell>
-                      <TableCell className="hidden md:table-cell">
+                      <TableCell>
                         <div className="flex justify-center">
                           <StatusIcon status={item.statusText} />
                         </div>

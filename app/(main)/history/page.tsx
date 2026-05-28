@@ -17,6 +17,9 @@ import {
   SelectContent,
   SelectItem,
   SelectValue,
+  SelectGroup,
+  SelectLabel,
+  SelectSeparator,
 } from "@/components/ui/select";
 import {
   Sheet,
@@ -51,8 +54,8 @@ type Filters = {
 };
 
 const initialFilters: Filters = {
-  command: "all",
-  asset: "all",
+  command: "",
+  asset: "",
   dateFrom: "",
   dateTo: "",
 };
@@ -145,9 +148,9 @@ export default function HistoryPage() {
       Page: page,
       PageSize: pageSize,
     };
-    if (appliedFilters.command !== "all")
+    if (appliedFilters.command && appliedFilters.command !== "all")
       params["Filter.Command"] = Number(appliedFilters.command) as 1 | 2;
-    if (appliedFilters.asset !== "all")
+    if (appliedFilters.asset && appliedFilters.asset !== "all")
       params["Filter.AssetId"] = Number(appliedFilters.asset) as 1 | 2;
     const fromIso = parseDdMmYyyy(appliedFilters.dateFrom);
     if (fromIso) params["Filter.DateFrom"] = fromIso;
@@ -222,9 +225,13 @@ export default function HistoryPage() {
                   <SelectValue placeholder="ทรัพย์สิน" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">ทรัพย์สิน</SelectItem>
-                  <SelectItem value="2">96.50%</SelectItem>
-                  <SelectItem value="1">99.99%</SelectItem>
+                  <SelectGroup>
+                    <SelectLabel>ทรัพย์สิน</SelectLabel>
+                    <SelectSeparator />
+                    <SelectItem value="all">ทั้งหมด</SelectItem>
+                    <SelectItem value="2">96.50%</SelectItem>
+                    <SelectItem value="1">99.99%</SelectItem>
+                  </SelectGroup>
                 </SelectContent>
               </Select>
 
@@ -235,9 +242,13 @@ export default function HistoryPage() {
                   <SelectValue placeholder="คำสั่ง" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">คำสั่ง</SelectItem>
-                  <SelectItem value="2">ซื้อ</SelectItem>
-                  <SelectItem value="1">ขาย</SelectItem>
+                  <SelectGroup>
+                    <SelectLabel>คำสั่ง</SelectLabel>
+                    <SelectSeparator />
+                    <SelectItem value="all">ทั้งหมด</SelectItem>
+                    <SelectItem value="2">ซื้อ</SelectItem>
+                    <SelectItem value="1">ขาย</SelectItem>
+                  </SelectGroup>
                 </SelectContent>
               </Select>
 
