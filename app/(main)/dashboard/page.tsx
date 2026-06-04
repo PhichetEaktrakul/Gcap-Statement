@@ -13,7 +13,7 @@ function fmt(
   maxFraction = 2,
   minFraction = 0
 ): string {
-  if (value === undefined || value === null) return "—";
+  if (value === undefined || value === null) return "0";
   return value.toLocaleString("en-US", {
     minimumFractionDigits: minFraction,
     maximumFractionDigits: maxFraction,
@@ -21,7 +21,7 @@ function fmt(
 }
 
 function fmtGold(value: number | undefined | null): string {
-  if (value === undefined || value === null) return "—";
+  if (value === undefined || value === null) return "0";
   const isWhole = Number.isInteger(value);
   return value.toLocaleString("en-US", {
     minimumFractionDigits: isWhole ? 0 : 5,

@@ -28,13 +28,9 @@ export default function DateField({
     if (typeof el.showPicker === "function") {
       try {
         el.showPicker();
-        return;
       } catch {
-        // fall through to focus/click fallback
       }
     }
-    el.focus();
-    el.click();
   }
 
   return (
@@ -48,6 +44,10 @@ export default function DateField({
         className="pr-10"
       />
 
+      <span className="pointer-events-none absolute inset-y-0 right-0 flex w-10 items-center justify-center text-gray-500">
+        <CalendarIcon className="w-4 h-4" />
+      </span>
+
       <input
         ref={dateRef}
         type="date"
@@ -56,18 +56,10 @@ export default function DateField({
           const iso = e.target.value;
           onChange(iso ? isoDateToDdMmYyyy(iso) : "");
         }}
-        tabIndex={-1}
-        aria-hidden="true"
-        className="pointer-events-none absolute right-0 top-0 h-full w-10 opacity-0"
-      />
-
-      <button
-        type="button"
         onClick={openPicker}
         aria-label="Open calendar"
-        className="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-gray-500 hover:text-gray-700">
-        <CalendarIcon className="w-4 h-4" />
-      </button>
+        className="absolute right-0 top-0 h-full w-10 cursor-pointer opacity-0"
+      />
     </div>
   );
 }

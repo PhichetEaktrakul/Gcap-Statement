@@ -3,24 +3,24 @@ import { ENDPOINTS } from "../endpoints";
 import type { ApiResponse } from "../types";
 
 export type BankAccount = {
-  bankName: string;
-  accountName: string;
-  maskedAccountNumber: string;
-  accountType: string;
-  bankBranch: string;
+  bankName: string | null;
+  accountName: string | null;
+  maskedAccountNumber: string | null;
+  accountType: string | null;
+  bankBranch: string | null;
 };
 
 export type CustomerProfile = {
-  customerId: number;
-  customerCode: string;
-  firstName: string;
-  lastName: string;
-  company: string;
-  cardNumber: string;
-  mobileNumber: string;
-  email: string;
-  tradeType: string;
-  bankAccount: BankAccount;
+  customerId: number | null;
+  customerCode: string | null;
+  firstName: string | null;
+  lastName: string | null;
+  company: string | null;
+  cardNumber: string | null;
+  mobileNumber: string | null;
+  email: string | null;
+  tradeType: string | null;
+  bankAccount: BankAccount | null;
 };
 
 export type CustomerAssets = {

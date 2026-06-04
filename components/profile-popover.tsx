@@ -25,7 +25,6 @@ export default function ProfilePopover() {
         if (!cancelled) setProfile(res.data);
       })
       .catch(() => {
-        // Silently fail on mount; the popover will still render with em-dashes.
       })
       .finally(() => {
         if (!cancelled) setLoadedOnce(true);
@@ -42,10 +41,8 @@ export default function ProfilePopover() {
       try {
         res = await authService.logout();
       } catch (err) {
-        const status = (err as { response?: { status?: number } })?.response
-          ?.status;
+        const status = (err as { response?: { status?: number } })?.response?.status;
         if (status !== 401) throw err;
-        // Token expired — refresh once and retry.
         try {
           await refreshAccessToken();
           res = await authService.logout();
@@ -71,9 +68,10 @@ export default function ProfilePopover() {
   }
 
   const fullName =
-    profile && (profile.firstName || profile.lastName)
-      ? `${profile.firstName} ${profile.lastName}`.trim()
-      : null;
+    [profile?.firstName, profile?.lastName]
+      .filter((part) => part && part.trim())
+      .join(" ")
+      .trim() || null;
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -115,17 +113,11 @@ export default function ProfilePopover() {
             <div className="text-xs font-semibold text-gray-500 tracking-wide">
               บัญชีธนาคาร
             </div>
-            <Row label="ธนาคาร" value={profile?.bankAccount.bankName} />
-            <Row label="สาขา" value={profile?.bankAccount.bankBranch} />
-            <Row label="ชื่อบัญชี" value={profile?.bankAccount.accountName} />
-            <Row
-              label="เลขที่บัญชี"
-              value={profile?.bankAccount.maskedAccountNumber}
-            />
-            <Row
-              label="ประเภทบัญชี"
-              value={profile?.bankAccount.accountType}
-            />
+            <Row label="ธนาคาร" value={profile?.bankAccount?.bankName} />
+            <Row label="สาขา" value={profile?.bankAccount?.bankBranch} />
+            <Row label="ชื่อบัญชี" value={profile?.bankAccount?.accountName} />
+            <Row label="เลขที่บัญชี" value={profile?.bankAccount?.maskedAccountNumber} />
+            <Row label="ประเภทบัญชี" value={profile?.bankAccount?.accountType} />
           </div>
 
           <Separator />
